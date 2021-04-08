@@ -1,0 +1,19 @@
+{
+  "name": "broker",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Broker for h264 live stream cameras with pan/tilt control",
+  "main": "broker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node broker.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^3.21.2",
+    "mout": "^1.0.0",
+    "ws": "^7.4.0"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,515 @@
+<html>
+<head>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="app.png">
+    <meta name="viewport" content="width=1280, initial-scale=0.66, maximum-scale=1, user-scalable=no"/>
+
+    <title>Pan &amp Tilt Camera</title>
+
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script type="text/javascript" src="http-live-player.js">;</script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            var canvas = $('#canvas')[0];
+            var cameraName = 'Camera',
+                wsavc = null,
+                connected = false,
+                motionGranted = false,
+                controlling = false,
+                zerosSent = false;
+
+            var pan = 0, tilt = 0,
+                panMin = -100 * 16, panMax = 100 * 16,
+                tiltMin = -30 * 16, tiltMax = 30 * 16;
+
+            let port = location.port ? parseInt(location.port) : (location.protocol === 'https:' ? 443 : 80);
+            let protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            var uri = protocol + '//' + location.hostname + ':' + port + location.pathname;
+            var params = new URLSearchParams(location.search);
+
+            cameraName = params.get('id');
+            console.log(`Connecting to ${cameraName}`);
+
+            connect();
+            setInterval(connect, 5000);
+
+            function connect() {
+                if (!wsavc) {
+                    try {
+                        wsavc = new WSAvcPlayer(canvas, "webgl", 1, 35);
+                        wsavc.onopen = function() {
+                            setTimeout(startStreamingControls, 500);
+                        }
+
+                        wsavc.onclose = function () {
+                            wsavc = null;
+                            connected = false;
+                            controlling = false;
+                            console.log('Disconnected');
+                        };
+                        wsavc.connect(uri, onstatus);
+                    } catch {
+                        console.error('No WsAvcPlayer available');
+                    }
+                }
+            }
+
+            function map(x, in_min, in_max, out_min, out_max) {
+                return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+            }
+
+            function onstatus(d) {
+                if (d.data && !d.data.err) {
+                    if (d.data.name === 'Pan') {
+                        pan = d.data.pos;
+                    } else if (d.data.name === 'Tilt') {
+                        tilt = d.data.pos;
+                    }
+                    px = map(pan, panMin, panMax, 0, 305);
+                    py = map(-tilt, tiltMin, tiltMax, 0, 75);
+                    $('#position').css('left', px).css('top', py);
+                }
+            }
+
+            function startStream() {
+                if (wsavc) {
+                    wsavc.playStream(cameraName);
+                }
+            }
+
+            function startStreamingControls() {
+                console.log('Connected');
+                connected = true;
+                controlling = true;
+                setTimeout(startStream, 100);
+            }
+
+            function stopStreamingControls() {
+                controlling = false;
+            }
+
+            function capitalize(s) {
+                if (typeof s !== 'string') return ''
+                if (s.length < 2) return s;
+                return s.charAt(0).toUpperCase() + s.slice(1)
+            }
+
+            function set_status(which, status) {
+                let v = capitalize(status).replace('None', '')
+                $('#' + which + '_status').css('background-color', v === '' ? 'transparent' : '#444').html(v);
+            }
+
+            function toggleControls() {
+                if (!controlling) {
+                    startStreamingControls();
+                } else {
+                    stopStreamingControls();
+                }
+                $('#toggle').css('background-image', 'url(' + (controlling ? 'unlock' : 'lock') + '.png)');
+            }
+
+            function forceReload() {
+                window.location = window.location;
+            }
+
+            function startHome() {
+                wsavc.ws.send('{"cmd": "home"}');
+            }
+
+            function deviceMotion(e) {
+                let orient = window.orientation;
+                if (orient) {
+                    let tilt = e.rotationRate.beta * (orient < 0 ? +1 : -1),
+                        pan = e.rotationRate.alpha * (orient < 0 ? -1 : +1),
+                        tv = Math.abs(tilt) > 0.25 ? tilt.toFixed(2)/4 : 0.0,
+                        pv = Math.abs(pan) > 0.25 ? pan.toFixed(2)/4 : 0.0
+
+                    if (connected && controlling) {
+                        if (tv && pv || !zerosSent) {
+                            wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true, "slow": false}');
+                            zerosSent = !tv && !pv;
+                        }
+                    }
+                }
+            }
+
+            function deviceOrientation() {
+                set_status('motion', window.orientation === 0 ? 'Not in landscape orientation' :
+                                    motionGranted ? 'None' : 'Enable Motion');
+            }
+
+            function requestDeviceMotionPermissions() {
+                window.addEventListener('orientationchange', deviceOrientation);
+                window.DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            window.addEventListener('devicemotion', deviceMotion, (e) => {
+                                throw e
+                            });
+                            $('#toggle').css('display', 'block').css('background-image', 'url(unlock.png)');
+                            motionGranted = true;
+                            set_status('motion', 'None');
+                            controlling = true;
+                        } else {
+                            setStatus('DeviceMotion permissions NOT granted.', true);
+                        }
+                    })
+                    .catch(e => {
+                        console.error(e)
+                    })
+            }
+
+            function keyHandler(e) {
+                let speed = e.shiftKey ? 4 : 96;
+                if (e.ctrlKey) {
+                    if (e.key === 'q') {
+                        wsavc.ws.send('{"cmd": "enable", "on": false}');
+                    } else if (e.key === 'e') {
+                        wsavc.ws.send('{"cmd": "enable", "on": true}');
+                    } else if (e.key === 'Home' || e.key === 'h') {
+                        startHome();
+                    }
+
+                } else if (e.key === 'ArrowLeft') {
+                    wsavc.ws.send('{"pan": ' + +speed + ', "tilt": 0, "relative": true, "slow": true}');
+                } else if (e.key === 'ArrowRight') {
+                    wsavc.ws.send('{"pan": ' + -speed + ', "tilt": 0, "relative": true, "slow": true}');
+                } else if (e.key === 'ArrowUp') {
+                    wsavc.ws.send('{"pan": 0, "tilt": ' + +speed + ', "relative": true, "slow": true}');
+                } else if (e.key === 'ArrowDown') {
+                    wsavc.ws.send('{"pan": 0, "tilt": ' + -speed + ', "relative": true, "slow": true}');
+
+                } else if (e.key === '0' || e.key === 'Home') {
+                    wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
+                } else if (e.key === '3') {
+                    wsavc.ws.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
+                } else if (e.key === '9') {
+                    wsavc.ws.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
+                } else if (e.key === '6') {
+                    if (e.shiftKey) {
+                        wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
+                    } else {
+                        wsavc.ws.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
+                    }
+
+                } else if (e.key === 'h') {
+                    $('#help').css('display', $('#help').css('display') === 'none' ? 'block' : 'none');
+                }
+            }
+
+            function menu(topic) {
+                let container = $('#' + topic + 's');
+                let collapsed = container.css('display') === 'none'
+                container.css('display', collapsed ? 'block' : 'none');
+                $('.menu').css('display', !collapsed ? 'block' : 'none');
+                $('.status').css('display', !collapsed ? 'block' : 'none');
+                $('#view').css('display', !collapsed ? 'block' : 'none');
+                $('#' + topic).css('display', 'block');
+            }
+
+            function pick(topic, e) {
+                let cmd = e.target.id;
+                if (cmd === 'clock0') {
+                    wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
+                } else if (cmd === 'clock9') {
+                    wsavc.ws.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
+                } else if (cmd === 'clock3') {
+                    wsavc.ws.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
+                } else if (cmd === 'clock6') {
+                    wsavc.ws.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
+                } else if (cmd === 'clock-6') {
+                    wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
+                } else if (cmd === 'autohome') {
+                    startHome();
+                }
+                menu(topic);
+            }
+
+            $('#reload').click(forceReload);
+            $('#toggle').click(toggleControls);
+
+            $('.view.item').click(function(e) { pick('view', e)});
+            $('#view').click(function() { menu('view')});
+
+
+            // Touch and mouse events
+            let tracking = false;
+            let lp = 0, lt = 0;
+
+            // Mouse event handlers
+            function mStart(e) {
+                $('#container').css('cursor', 'grab');
+                cStart(e.pageX, e.pageY);
+            }
+
+            function mMove(e) {
+                cMove(e.pageX, e.pageY);
+            }
+
+            function mEnd(e) {
+                tracking = false;
+                $('#container').css('cursor', 'default');
+            }
+
+            // Touch event handlers
+            function tStart(e) {
+                cStart(e.originalEvent.pageX, e.originalEvent.pageY);
+            }
+
+            function tEnd(e) {
+                tracking = false;
+            }
+
+            function tMove(e) {
+                e.preventDefault();
+                cMove(e.originalEvent.pageX, e.originalEvent.pageY);
+            }
+
+            // Common event processors
+            function cStart(p, t) {
+                tracking = true;
+                lp = p;
+                lt = t;
+            }
+
+            function cMove(p, t) {
+                if (tracking) {
+                    let pv = p - lp;
+                    let tv = t - lt;
+                    if (pv || tv) {
+                        // console.log(`pv=${pv}; tv=${tv}`, e);
+                        wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true, "slow": false}');
+                        lp = p;
+                        lt = t;
+                    }
+                }
+            }
+
+            function hideHelp() {
+                $('#help').css('display', 'none');
+            }
+
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                $('#help').css('display', 'none');
+                $('#motion_status').click(requestDeviceMotionPermissions);
+                setTimeout(deviceOrientation, 100);
+                setTimeout(requestDeviceMotionPermissions, 500);
+
+                // Register touch events....
+                $('#container').on('touchstart', tStart).on('touchmove', tMove).on('touchend', tEnd);
+
+            } else {
+                $('#motion_status').css('display', 'none');
+                $('#reload').css('display', 'none');
+                $('.menu').css('display', 'none');
+                $('#positioncontainer').css('top', 600);
+
+                // Unless embedded, center the view-port on the page.
+                if (window.location.hash === '#embed') {
+                    // Running embedded w/o any decorations...
+                } else {
+                    $('#container').css('position', 'flex').css('margin', '50px auto').css('border', 'solid 4px #777');
+                }
+
+                // Register mouse events
+                $('#container').on('mousedown', mStart).on('mousemove', mMove).on('mouseup', mEnd);
+            }
+
+            $('body').keydown(keyHandler);
+            setTimeout(hideHelp, 10000);
+        });
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #222;
+            color: #ddd;
+            font-family: Arial, Helvetica, Sans-Serif, serif;
+            font-size: 24px;
+        }
+
+        #container {
+            width: 1280px;
+            height: 720px;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #333;
+            z-index: -1;
+        }
+
+        #controls {
+            width: 100%;
+            padding: 5px 10px 5px 10px;
+            position: fixed;
+        }
+
+        .overlay {
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 10px;
+            padding: 8px;
+            font-weight: bold;
+            position: absolute;
+            left: 20px;
+            background-color: #444;
+            opacity: 0.5;
+        }
+
+        .menu {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .menu {
+            width: 64px;
+            height: 64px;
+            background-repeat: no-repeat;
+            background-position-y: 4px;
+        }
+
+        .status {
+            left: 80px;
+            background-color: transparent;
+        }
+
+        .choices {
+            margin-top: 0px;
+            left: 80px;
+        }
+
+
+        .item {
+            padding: 8px 24px;
+            cursor: pointer;
+        }
+
+        #reload {
+            margin: 0px;
+            padding: 0px;
+            width: 64px;
+            height: 64px;
+            top: 80px;
+            background-image: url('reload.png');
+            background-repeat: no-repeat;
+            background-position-y: 4px;
+        }
+
+        #toggle {
+            display: none;
+            margin: 0px;
+            padding: 0px;
+            width: 64px;
+            height: 64px;
+            top: 200px;
+            background-image: url('lock.png');
+            background-repeat: no-repeat;
+            background-position-y: 4px;
+        }
+
+        .status {
+            left: 80px;
+            background-color: transparent;
+        }
+
+        #motion_status {
+            top: 10px;
+            left: 0px;
+        }
+
+        #view {
+            top: 320px;
+            background-image: url('camera.png');
+        }
+
+        #view_status {
+            top: 320px;
+        }
+
+        #views {
+            display: none;
+            top: 250px;
+        }
+
+        #positioncontainer {
+            border: solid #ccc 2px;
+            width: 320px;
+            height: 90px;
+            margin: auto;
+            top: 540px;
+            position: relative;
+            opacity: 0.6;        }
+
+        #position {
+            position: relative;
+            top: 37px;
+            left: 152px;
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            background-color: #ccc;
+        }
+
+        #help {
+            position: relative;
+            width: 1280px;
+            margin: auto;
+            font-size: 18px;
+            color: #999;
+        }
+
+    </style>
+
+</head>
+<body>
+<div id="container">
+    <canvas id="canvas"></canvas>
+
+    <div id="controls">
+        <div class="overlay" id="motion_status">Enable Motion</div>
+        <div class="overlay" id="reload"></div>
+        <div class="overlay" id="toggle"></div>
+
+        <div class="overlay menu" id="view"></div>
+        <div class="overlay choices" id="views">
+            <div class="view item" id="clock0">Forward</div>
+            <div class="view item" id="clock9">Left</div>
+            <div class="view item" id="clock3">Right</div>
+            <div class="view item" id="clock-6">Backward (CW)</div>
+            <div class="view item" id="clock6">Backward (CCW)</div>
+            <p><hr></p>
+            <div class="view item" id="autohome">Auto Home</div>
+        </div>
+    </div>
+
+    <div id="positioncontainer"><div id="position"></div></div>
+
+</div>
+<div id="help">
+    <p>
+        To control pan/tilt you can use the keyboard arrow keys. Hold down the <em>Shift</em> key for fine-grained
+        position control.
+        Alternatively, you can pan around the real-world using click-and-drag on the camera viewport.
+    </p>
+    <p>
+        You can also press the <em>0</em>, <em>3</em>, <em>9</em> and <em>6</em> key to quickly
+        navigate to the home (12 o'clock) position or to the respective 3, 9 and 6 o'clock positions.
+    </p>
+    <p>
+        To initiate the auto-homing sequence, press <em>Ctrl-Home</em>.
+    </p>
+    <p>
+        To hide/show this message, press the <em>h</em> key.
+    </p>
+</div>
+</body>
+</html>

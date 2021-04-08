@@ -1,0 +1,25 @@
+#!/bin/bash
+
+while getopts ":d" opt; do
+  case ${opt} in
+    d) let justData=true;
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+dst="pi@${1:-192.168.1.105}"
+port=${2:-22}
+
+function killIt {
+    ssh -p $port $dst "pid=\$(ps -ef | grep broker.js | grep -v grep | grep -v sudo | cut -c10-15); test -n \"\$pid\" && sudo xargs kill -9 \$pid"
+}
+
+scp -r -P $port -r *.js package.json public/ lib/ $dst:broker
+scp -r -P $port -r vendor/dist/*.js vendor/dist/*.html $dst:broker/vendor/dist
+
+if [ -z $justData ]; then
+  killIt
+  trap killIt EXIT
+  ssh -p $port $dst "cd broker; sudo node broker.js"
+fi

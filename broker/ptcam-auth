@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Simple utility to grant and revoke authorization tokens for the pan/tilt camera
+
+function usage () {
+    echo "usage: ptcam-auth <camera> list" >&2
+    echo "       ptcam-auth <camera> <name>" >&2
+    echo "       ptcam-auth <camera> grant <name>" >&2
+    echo "       ptcam-auth <camera> revoke <name>" >&2
+}
+
+camera="${1}"
+
+cd $(dirname $0)
+
+case "${2:-list}" in
+list)
+        [ -n ${camera} ] && grep " ${camera} " tokens || cat tokens
+	;;
+grant)
+	echo ${3:-guest}: ${camera} $(uuidgen) >> tokens
+        t=$(grep "${3:-guest}: ${camera} " tokens | cut -d\  -f3)
+        [ -n $t ] && echo "https://vachuska.com/camera/?id=${camera}&t=$t"
+	;;
+revoke)
+	egrep -v "^${3:-guest}: ${camera} " tokens > tokens.save
+        mv tokens.save tokens
+	;;
+*)
+        t=$(grep "^${cmd:-guest}: ${camera} " tokens | cut -d\  -f3)
+        [ -n $t ] && echo "https://vachuska.com/camera/?id=${camera}&t=$t"
+        ;;
+esac
+
