@@ -21,5 +21,5 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable camera.service
-systemctl start camera.service
+systemctl enable camera-broker.service
+systemctl start camera-broker.service
