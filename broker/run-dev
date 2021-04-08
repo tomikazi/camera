@@ -16,7 +16,6 @@ function killIt {
 }
 
 scp -r -P $port -r *.js package.json public/ lib/ $dst:broker
-scp -r -P $port -r vendor/dist/*.js vendor/dist/*.html $dst:broker/vendor/dist
 
 if [ -z $justData ]; then
   killIt
