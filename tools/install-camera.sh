@@ -15,4 +15,8 @@ rm -fr clone
 if [ ! -f /lib/systemd/system/camera.service ]; then
   echo "To install camera as a service run the following:"
   echo "curl -s https://raw.githubusercontent.com/tomikazi/camera/master/tools/install-camera-service.sh | sudo sh -s CAMERA-NAME [BROKER-URL]"
+else
+  echo "Restart camera service via:"
+  echo "sudo systemctl stop camera.service"
+  echo "sudo systemctl start camera.service"
 fi
