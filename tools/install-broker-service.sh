@@ -2,7 +2,7 @@
 # Installs the camera broker software to run as a service
 
 # Check if the service is installed; setup if needed
-cat /lib/systemd/system/camera-broker.service <<EOF
+cat > /lib/systemd/system/camera-broker.service <<EOF
 [Unit]
 Description=Pan and Tilt Camera broker
 Documentation=https://example.com
