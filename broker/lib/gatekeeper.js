@@ -4,22 +4,20 @@ const fs = require('fs');
 
 const tokensFile = './tokens';
 
-console.log('[' + tokensFile + ']');
-console.log(fs.readFileSync(tokensFile).toString());
-
 let forbidden = fs.readFileSync(__dirname + '/../public/forbidden.html').toString();
 
 // Poor-man's access control
-const validateToken = function (token) {
+const validateToken = function (token, id) {
     if (!fs.existsSync(tokensFile)) {
         return true;
     }
     if (token && token.length === 36) {
         let data = fs.readFileSync(tokensFile);
         if (data) {
-            let match = new RegExp('(.*): (.*) ' + token).exec(data.toString());
+            let re = id ? new RegExp('(.*): ' + id + ' ' + token) : new RegExp('(.*): (.*) ' + token);
+            let match = re.exec(data.toString());
             if (match) {
-                return {user: match[1], camera: match[2]};
+                return {user: match[1], camera: id ? id : match[2]};
             }
         }
     }
@@ -31,7 +29,7 @@ let url, uiPaths, apiPaths;
 const gateKeeper = function (req, res, next) {
     if (req.path.match(uiPaths)) {
         console.log(`New visitor to ${req.query.id}; token=${req.query.t}`);
-        req.ctx = validateToken(req.query.t);
+        req.ctx = validateToken(req.query.t, req.query.id);
         if (req.ctx && req.ctx.camera === req.query.id) {
             next();
             return;
