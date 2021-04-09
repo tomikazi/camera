@@ -1,0 +1,86 @@
+"use strict";
+
+const bodyParser = require('body-parser');
+
+let cameras = null, clients = null, url;
+
+const getCameras = function (req, res) {
+    let d = [];
+    cameras.forEach((_, name) => d.push(name));
+    res.status(200).send(JSON.stringify(d));
+}
+
+const getViewers = function (req, res) {
+    let d = [];
+    clients.forEach((name, socket) => d.push({camera: name, address: socket._socket.remoteAddress}));
+    res.status(200).send(JSON.stringify(d));
+}
+
+const checkPermissions = function(id, req, res) {
+    if (req.params.camera !== req.header('id')) {
+        res.status(403).send({'error': 'Forbidden; wrong camera ID specified'});
+        return false;
+    }
+    return true;
+}
+
+const controlCamera = function (req, res) {
+    if (checkPermissions(req.params.camera, req, res)) {
+        console.debug(`Controlling ${req.params.camera}: ${req.body.cmd}`);
+        let camera = cameras.get(req.params.camera);
+        let cmd = req.body.cmd;
+
+        if (cmd === 'moveTo') {
+            let pos = req.body.pos;
+            if (pos === '12') {
+                camera.socket.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
+            } else if (pos === '9') {
+                camera.socket.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
+            } else if (pos === '3') {
+                camera.socket.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
+            } else if (pos === '6') {
+                camera.socket.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
+            } else if (pos === '-6') {
+                camera.socket.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
+            } else if (!pos) {
+                camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": false}');
+            }
+        } else if (cmd === 'moveBy') {
+            camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": true}');
+        } else if (cmd === 'autohome') {
+            camera.socket.send('{"cmd": "home"}');
+        }
+
+        res.status(200).send({});
+    }
+}
+
+const disconnectCameraViewer = function (req, res) {
+    if (checkPermissions(req.params.camera, req, res)) {
+        console.debug(`Disconnecting ${req.params.viewer} from ${req.params.camera}`);
+        let camera = cameras.get(req.params.camera);
+        clients.forEach((name, socket) => {
+            if (name === camera.name && socket._socket.remoteAddress.endsWith(':' + req.params.viewer)) {
+                socket.close();
+            }
+        });
+        res.status(200).send({});
+    }
+}
+
+
+const Init = function(app, appUrl, relay) {
+    url = appUrl;
+    cameras = relay.cameras;
+    clients = relay.clients;
+
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: true }));
+
+    app.get(url + '/api/cameras', getCameras);
+    app.get(url + '/api/viewers', getViewers);
+    app.put(url + '/api/:camera', controlCamera);
+    app.delete(url + '/api/:camera/:viewer', disconnectCameraViewer);
+}
+
+exports.Init = Init
