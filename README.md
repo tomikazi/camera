@@ -19,9 +19,10 @@ This arrangement is better suited for deployment of cameras behind firewalls.
 The video stream from the a camera can be viewed on any modern browser. The pan/tilt can be controlled using several 
 different means.
 
-* Using mouse click-and-drag or tap-and-trag on touch devices
+* Using mouse click-and-drag or tap-and-drag on touch devices
+* Using arrow keyboard keys and other keyboard short-cuts  
 * Using mobile device motion - works for iOS devices and select Androids that support `DeviceMotionEvent` Web API
-** Note that this requires the broker to use HTTPS
+    * Note that this requires the broker to use HTTPS
 
 The pan and tilt mechanism uses A4988 stepper drivers and NEMA 17 motors to move about a Raspberry Pi HQ camera.
 The current mount design allows for -180/+180 degrees on pan axis and -50/+50 degrees on tilt axis. Two hall-effect
