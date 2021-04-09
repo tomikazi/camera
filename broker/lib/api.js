@@ -5,12 +5,14 @@ const bodyParser = require('body-parser');
 let cameras = null, clients = null, url;
 
 const getCameras = function (req, res) {
+    console.debug(`Getting list of currently registered cameras`);
     let d = [];
     cameras.forEach((_, name) => d.push(name));
     res.status(200).send(JSON.stringify(d));
 }
 
 const getViewers = function (req, res) {
+    console.debug(`Getting list of current viewers`);
     let d = [];
     clients.forEach((name, socket) => d.push({camera: name, address: socket._socket.remoteAddress}));
     res.status(200).send(JSON.stringify(d));
@@ -18,11 +20,26 @@ const getViewers = function (req, res) {
 
 const checkPermissions = function(id, req, res) {
     if (req.params.camera !== req.header('id')) {
-        res.status(403).send({'error': 'Forbidden; wrong camera ID specified'});
+        res.status(403).send({'error': 'Forbidden; mismatched camera ID specified'});
         return false;
     }
     return true;
 }
+
+const getCamera = function (req, res) {
+    if (checkPermissions(req.params.camera, req, res)) {
+        console.debug(`Getting ${req.params.camera} information`);
+        let camera = cameras.get(req.params.camera);
+        let v = [];
+        clients.forEach((name, socket) => { if (name === camera.name) { v.push(socket._socket.remoteAddress)}});
+        res.status(200).send({
+            camera: camera.name,
+            viewers: v,
+            pos: camera.pos,
+        });
+    }
+}
+
 
 const controlCamera = function (req, res) {
     if (checkPermissions(req.params.camera, req, res)) {
@@ -68,7 +85,6 @@ const disconnectCameraViewer = function (req, res) {
     }
 }
 
-
 const Init = function(app, appUrl, relay) {
     url = appUrl;
     cameras = relay.cameras;
@@ -79,6 +95,7 @@ const Init = function(app, appUrl, relay) {
 
     app.get(url + '/api/cameras', getCameras);
     app.get(url + '/api/viewers', getViewers);
+    app.get(url + '/api/:camera', getCamera);
     app.put(url + '/api/:camera', controlCamera);
     app.delete(url + '/api/:camera/:viewer', disconnectCameraViewer);
 }

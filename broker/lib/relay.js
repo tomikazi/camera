@@ -30,6 +30,7 @@ class StreamRelay {
             name: null,
             socket: socket,
             initMessages: [],
+            pos: {pan: 0, tilt: 0}
         };
         let self = this;
         console.debug(`Camera connected`);
@@ -43,6 +44,12 @@ class StreamRelay {
                     camera.name = name;
                     self.cameras.set(name, camera);
                     self.update_camera_light(name);
+                } else if (d.action === 'status') {
+                    if (d.data.name === 'Pan') {
+                        camera.pos.pan = d.data.pos;
+                    } else if (d.data.name === 'Tilt') {
+                        camera.pos.tilt = d.data.pos;
+                    }
                 }
 
             } else if (camera.initMessages.length < 2) {

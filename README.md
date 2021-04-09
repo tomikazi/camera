@@ -102,6 +102,10 @@ iOS device and with the camera positions shortcut menu activated:
 
 The pan/tilt position and range indicator box is shown at the bottom and will be visible only when the camera is in motion.
 
+# REST API
+The broker also supports a simple [REST API](/docs/api.md) using which other applications can query and control the remote cameras.
+
+
 # Design
 Additional design documentation for the 3D-printed mount, custom PCB and overall assembly can is available in the [Design](docs/design.md) section
 
