@@ -16,7 +16,7 @@ multiple viewers to view the same camera.
 
 This arrangement is better suited for deployment of cameras behind firewalls.
 
-The video stream from the a camera can be viewed on any modern browser. The pan/tilt can be controlled using several 
+The video stream from the camera can be viewed on any modern browser. The pan/tilt can be controlled using several 
 different means.
 
 * Using mouse click-and-drag or tap-and-drag on touch devices
@@ -86,6 +86,21 @@ usage: ptcam-auth <camera> list
        ptcam-auth <camera> grant <name>
        ptcam-auth <camera> revoke <name>
 ```
+
+# Launching Viewer
+To view a particular camera video stream, simply connect to the broker URL on port 5000 and specify the camera name and 
+if security is required, the camera token, e.g.:
+
+```
+http://192.168.1.79:5000/camera/?id=FrontYard&t=c11559d8-e91c-4140-85f0-9e14b4744e7e
+```
+
+This will provide the web-page with the video stream canvas. The following is an example of the GUI when viewed on an
+iOS device and with the camera positions shortcut menu activated:
+
+![Camera UI](docs/ui-sample.jpeg)
+
+The pan/tilt position and range indicator box is shown at the bottom and will be visible only when the camera is in motion.
 
 # Design
 Additional design documentation for the 3D-printed mount, custom PCB and overall assembly can is available in the [Design](docs/design.md) section

@@ -18,6 +18,7 @@ _TODO: Add Fusion files!_
 * 2 6mm neodymium magnets (for limit switches)
 * 3D printed mount (Fusion 360 & STL files available below)
 * Custom driver board and header board (Eagle and Gerber files available below)
+* 13 pixel long WS2812B 60/m strand (for LED illumination and viewer indicator)    
 * ~1m shielded 28AWG 3-wire cable (for limit switch cables)
 * ~10cm 10-wire ribbon cable (for driver board to header board connection)
 * 2 x ~60cm 4-wire stepper motor cables (may come with NEMA motors)
