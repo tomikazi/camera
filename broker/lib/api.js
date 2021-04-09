@@ -19,11 +19,11 @@ const getViewers = function (req, res) {
 }
 
 const checkPermissions = function(id, req, res) {
-    if (req.params.camera !== req.header('id')) {
-        res.status(403).send({'error': 'Forbidden; mismatched camera ID specified'});
-        return false;
+    if (req.params.camera === id) {
+        return true;
     }
-    return true;
+    res.status(403).send({'error': 'Forbidden; token does not apply to the specified camera'});
+    return false;
 }
 
 const getCamera = function (req, res) {
@@ -68,7 +68,7 @@ const controlCamera = function (req, res) {
             camera.socket.send('{"cmd": "home"}');
         }
 
-        res.status(200).send({});
+        res.status(200).send();
     }
 }
 
@@ -81,7 +81,7 @@ const disconnectCameraViewer = function (req, res) {
                 socket.close();
             }
         });
-        res.status(200).send({});
+        res.status(200).send();
     }
 }
 

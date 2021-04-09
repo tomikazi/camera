@@ -10,17 +10,20 @@ console.log(fs.readFileSync(tokensFile).toString());
 let forbidden = fs.readFileSync(__dirname + '/../public/forbidden.html').toString();
 
 // Poor-man's access control
-const validateToken = function (id, token) {
+const validateToken = function (token) {
     if (!fs.existsSync(tokensFile)) {
         return true;
     }
-    if (id.length && token.length === 36) {
+    if (token && token.length === 36) {
         let data = fs.readFileSync(tokensFile);
-        if (data && data.includes(' ' + id + ' ' + token)) {
-            return true;
+        if (data) {
+            let match = new RegExp('(.*): (.*) ' + token).exec(data.toString());
+            if (match) {
+                return {user: match[1], camera: match[2]};
+            }
         }
     }
-    return false;
+    return null;
 }
 
 let url, uiPaths, apiPaths;
@@ -28,17 +31,21 @@ let url, uiPaths, apiPaths;
 const gateKeeper = function (req, res, next) {
     if (req.path.match(uiPaths)) {
         console.log(`New visitor to ${req.query.id}; token=${req.query.t}`);
-        if (req.query.t && validateToken(req.query.id, req.query.t)) {
+        req.ctx = validateToken(req.query.t);
+        if (req.ctx && req.ctx.camera === req.query.id) {
             next();
-        } else {
-            res.status(403).send(forbidden);
+            return;
         }
+        res.status(403).send(forbidden);
+
     } else if (req.path.match(apiPaths)) {
-        if (req.header('token') && validateToken(req.header('id'), req.header('token'))) {
+        console.log(`API request: ${req.path}`);
+        req.ctx = validateToken(req.header('token'));
+        if (req.ctx) {
             next();
-        } else {
-            res.status(403).send({'error': 'Forbidden; invalid camera ID token combination specified'});
+            return;
         }
+        res.status(403).send({'error': 'Forbidden; invalid token specified'});
     } else {
         next();
     }

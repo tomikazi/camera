@@ -17,22 +17,41 @@ Other applications can use the following REST API to query and control the remot
       after revoking a token
       
 ## Authorization
-If token authorization is enabled, the HTTP request must have the `id` and `token` headers populated
-with corresponding camera name and camera token. Any camera token can be used to obtain list of cameras
-and list of viewers, but any camera-specific requests must have camera-specific `id` and `token` specified.
+If token authorization is enabled, the HTTP request must have the `token` header populated
+with a valid camera token. Any camera token can be used to obtain the list of cameras or the list of viewers,
+but any camera-specific request must have camera-specific `token` provided.
 
 # Examples
 The following are a few examples of how one might use the `curl` command to issue API requests:
 ```
+# Get list of all cameras
+curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
+    http://broker.local:5000/camera/api/cameras
+["Driveway", "FrontYard", "BackYard"]
+
+# Get information about front yard camera
+curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
+    http://broker.local:5000/camera/api/FrontYard
+{
+  "camera": "FrontYard",
+  "viewers": [
+    "::ffff:192.168.1.71"
+  ],
+  "pos": {
+    "pan": -438,
+    "tilt": 219
+  }
+}
+
 # Trigger autohome
-curl -H 'Content-type: application/json' -H 'id: FrontYard' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT http://broker.local:6000/camera/api/FrontYard -d '{ "cmd": "autohome" }'
+curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "autohome" }'
 
 # Pan to 9 o'clock position; tilt level at 0
-curl -H 'Content-type: application/json' -H 'id: FrontYard' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT https://broker.local:6000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pos": "9" }'
+curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pos": "9" }'
 
 # Pan to specific coordinates
-curl -H 'Content-type: application/json' -H 'id: FrontYard' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT https://broker.local:6000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pan": -1050, "tilt": 200 }'
+curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pan": -1050, "tilt": 200 }'
 ```
