@@ -263,6 +263,11 @@
                 cStart(e.originalEvent.pageX, e.originalEvent.pageY);
             }
 
+            function atStart(e) {
+                e.preventDefault();
+                cStart(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY);
+            }
+
             function tEnd(e) {
                 tracking = false;
             }
@@ -270,6 +275,11 @@
             function tMove(e) {
                 e.preventDefault();
                 cMove(e.originalEvent.pageX, e.originalEvent.pageY);
+            }
+
+            function atMove(e) {
+                e.preventDefault();
+                cMove(e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY);
             }
 
             // Common event processors
@@ -302,8 +312,14 @@
                 setTimeout(deviceOrientation, 100);
                 setTimeout(requestDeviceMotionPermissions, 500);
 
-                // Register touch events....
-                $('#container').on('touchstart', tStart).on('touchmove', tMove).on('touchend', tEnd);
+                if (/Android/i.test(navigator.userAgent)) {
+                    $('#motion_status').css('display', 'none');
+                    // Register touch events for Android....
+                    $('#container').on('touchstart', atStart).on('touchmove', atMove).on('touchend', tEnd);
+                } else {
+                    // Register touch events for others....
+                    $('#container').on('touchstart', tStart).on('touchmove', tMove).on('touchend', tEnd);
+                }
 
             } else {
                 $('#motion_status').css('display', 'none');
