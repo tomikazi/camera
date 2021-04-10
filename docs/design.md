@@ -26,6 +26,8 @@ _TODO: Add Fusion files!_
 * 4x M2.5x3-4mm screws (for securing buck converter and driver board)
 * 8x 12-14mm rubber feet (4 for enclosure and 4 fo camera base)
 
+![Parts](parts.png)
+
 ## Mount and Enclosure Design
 The enclosure case and the various parts of the mount itself were all custom designed from scratch using Autodesk Fusion 360. 
 The objective was to make it as simple and modular as possible, while also making it reasonably compact.
