@@ -9,7 +9,7 @@ let forbidden = fs.readFileSync(__dirname + '/../public/forbidden.html').toStrin
 // Poor-man's access control
 const validateToken = function (token, id) {
     if (!fs.existsSync(tokensFile)) {
-        return true;
+        return {user: 'anonymous', camera: id};
     }
     if (token && token.length === 36) {
         let data = fs.readFileSync(tokensFile);
