@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 
-const tokensFile = './tokens';
+const tokensFile = '/var/broker/tokens';
 
 let forbidden = fs.readFileSync(__dirname + '/../public/forbidden.html').toString();
 
@@ -55,6 +55,10 @@ const Init = function (app, appUrl) {
     apiPaths = new RegExp('\\' + url + '\/api\/');
 
     app.use(gateKeeper);
+
+    if (fs.existsSync(tokensFile)) {
+        console.log('Found token file; running in secured mode');
+    }
 }
 
 exports.Init = Init
