@@ -1,9 +1,13 @@
+"use strict";
+
 var ws281x = require('rpi-ws281x');
- 
+const fs = require('fs');
+const hw2 = (fs.existsSync('./hw2'))
+
 class Light {
  
     constructor() {
-        this.config = {leds:13, brightness:96, stripType:'grb', gpio:21, dma: 10};
+        this.config = {leds:13, brightness:96, stripType:'grb', gpio:hw2 ? 18 : 21, dma: 10};
         ws281x.configure(this.config);
         this.pixels = new Uint32Array(this.config.leds);
         this.color = 0xffffff;

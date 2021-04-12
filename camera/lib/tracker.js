@@ -1,19 +1,24 @@
 "use strict";
 
-const Motor = require('./stepper');
+const fs = require('fs');
+const hw2 = (fs.existsSync('./hw2'))
+
+const Motor = require('.//stepper');
 
 class Tracker {
 
     constructor() {
+        console.log('Using ' + (hw2 ? 'HW2' : 'HW1') + ' GPIO mapping.');
+
         // Create pan and tilt motors
         this.pan = new Motor('Pan', {
-            step: 27, dir: 22, enable: 17, limit: 15, reverse: true,
+            step: 27, dir: 22, enable: 17, limit: hw2 ? 14 : 15, reverse: true,
             min: -100 * 16, max: 100 * 16, home_steps: 220 * 16,
             home_backoff: -16 * 16, center_offset: -130 * 16
         });
 
         this.tilt = new Motor('Tilt', {
-            step: 3, dir: 4, enable: 2, limit: 18, reverse: false,
+            step: 3, dir: 4, enable: 2, limit: hw2 ? 15 : 18, reverse: false,
             min: -28 * 16, max: +28 * 16, home_steps: 56 * 16,
             home_backoff: -16 * 16, center_offset: -28 * 16
         });
