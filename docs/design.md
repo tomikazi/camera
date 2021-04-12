@@ -3,8 +3,6 @@
 ## BOM
 The following list of materials is required to assemble the camera setup:
 
-_TODO: Add Fusion files!_
-
 * Raspberry Pi 4B
 * Raspberry HQ Camera
 * 30-50cm Raspberry Camera ribbon cable
@@ -34,13 +32,16 @@ The objective was to make it as simple and modular as possible, while also makin
 
 The following is a list of parts together with links to the STL and the original Fusion design files:
 
+#### Enclosure - [Fusion 360 File](../design/fusion360/PanTiltEnclosure%20v17.f3z)
 * Enclosure bottom
 * Enclosure top
+
+#### Mount Assembly] - [Fusion 360 File](../design/fusion360/PanTiltMechanism%20v32.f3d)
 * Pan motor mount
 * Tilt motor mount
 * Camera mount
 * Camera plate
-* Camera back plate (design from Thingiverse)
+* Camera back plate ([design from Thingiverse](https://www.thingiverse.com/thing:4540545))
 * Camera back clip
 * Pan axle washer
 
