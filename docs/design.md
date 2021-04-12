@@ -46,22 +46,22 @@ The following is a list of parts together with links to the STL and the original
 
 ## Electronics
 A pair of simple PCBs was designed to allow for relatively simple assembly. The boards were designed using Autodesk Eagle.
-Below are links to their schematic and board design files:
-
-_TODO: Add Eagle files!_
+Below are links to their schematic and board design files for Autodesk EAGLE:
 
 The two boards are:
-* Stepper Driver board for housing the two A4988 stepper drivers - PCB - Schematic
+* Stepper Driver board for housing the two A4988 stepper drivers - [PCB](../design/eagle/PanTiltCtlBoard.brd) - [Schematic](../design/eagle/PanTiltCtlBoard.sch)
     * +12V/GND pads
     * 2 A4988 drivers (pan/tilt)
     * 8-pin header for harness connection to the Raspberry Pi header board
 
-* Header break-out board for connecting to the top 16 GPIO pins of the Raspberry Pi - PCB - Schematic
+* Header break-out board for connecting to the top 16 GPIO pins of the Raspberry Pi - [PCB](../design/eagle/PanTiltHeader.brd) - [Schematic](../design/eagle/PanTiltHeader.sch)
     * 8 pads for harness interconnect with the stepper driver
     * +5V/GND to power Raspberry Pi
     * +3V3/GND/DATA pads for pan limit switch
     * +3V3/GND/DATA pads for tilt limit switch
-    * +5V/GND/DATA pads for LED strip (future addition)
+    * +5V/GND/DATA pads for LED strip
+  
+The design folder also has ZIP files for ordering the PCBs on JLCPCB.
 
 ## Wiring Harnesses
 
@@ -76,3 +76,5 @@ The two boards are:
     * Pan: 20cm
 * Header Ribbon Cable (8-wide)
     * 10cm
+* LED Cable (5V/GND/Data)
+    * 35cm
