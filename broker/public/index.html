@@ -60,6 +60,14 @@
                 return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
             }
 
+            function showPositionIndicator() {
+                $('#positioncontainer').css('opacity', 0.8);
+                if (positionTimer) {
+                    clearTimeout(positionTimer);
+                }
+                positionTimer = setTimeout(function() { $('#positioncontainer').css('opacity', 0)}, 5000);
+            }
+
             function onstatus(d) {
                 if (d.data && !d.data.err) {
                     if (d.data.name === 'Pan') {
@@ -70,11 +78,7 @@
                     px = map(pan, panMin, panMax, 0, 305);
                     py = map(-tilt, tiltMin, tiltMax, 0, 75);
                     $('#position').css('left', px).css('top', py);
-                    $('#positioncontainer').css('opacity', 0.8);
-                    if (positionTimer) {
-                        clearTimeout(positionTimer);
-                    }
-                    positionTimer = setTimeout(function() { $('#positioncontainer').css('opacity', 0)}, 5000);
+                    showPositionIndicator();
                 }
             }
 
@@ -287,6 +291,7 @@
                 tracking = true;
                 lp = p;
                 lt = t;
+                showPositionIndicator();
             }
 
             function cMove(p, t) {

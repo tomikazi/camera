@@ -11,7 +11,7 @@ function usage () {
 
 camera="${1}"
 
-[ $camera = "--help" ] && usage && exit 1
+[ "$camera" = "--help" ] && usage && exit 1
 
 cd $(dirname $0)
 
@@ -29,7 +29,7 @@ revoke)
         mv tokens.save tokens
         ;;
 *)
-        t=$(grep "^${cmd:-guest}: ${camera} " tokens | cut -d\  -f3)
+        t=$(grep "^${2:-guest}: ${camera} " tokens | cut -d\  -f3)
         [ -n $t ] && echo "https://vachuska.com/camera/?id=${camera}&t=$t"
         ;;
 esac
