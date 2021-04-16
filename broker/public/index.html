@@ -60,12 +60,16 @@
                 return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
             }
 
-            function showPositionIndicator() {
+            function showUIOverlay() {
+                $('.ui').css('opacity', 0.5);
                 $('#positioncontainer').css('opacity', 0.8);
                 if (positionTimer) {
                     clearTimeout(positionTimer);
                 }
-                positionTimer = setTimeout(function() { $('#positioncontainer').css('opacity', 0)}, 5000);
+                positionTimer = setTimeout(function() {
+                    $('#positioncontainer').css('opacity', 0);
+                    $('.ui').css('opacity', 0);
+                }, 5000);
             }
 
             function onstatus(d) {
@@ -78,7 +82,7 @@
                     px = map(pan, panMin, panMax, 0, 305);
                     py = map(-tilt, tiltMin, tiltMax, 0, 75);
                     $('#position').css('left', px).css('top', py);
-                    showPositionIndicator();
+                    showUIOverlay();
                 }
             }
 
@@ -291,7 +295,7 @@
                 tracking = true;
                 lp = p;
                 lt = t;
-                showPositionIndicator();
+                showUIOverlay();
             }
 
             function cMove(p, t) {
@@ -344,6 +348,7 @@
             }
 
             $('body').keydown(keyHandler);
+            showUIOverlay();
             setTimeout(hideHelp, 10000);
         });
     </script>
@@ -392,21 +397,18 @@
             opacity: 0.5;
         }
 
-        .menu {
-            margin: 0px;
-            padding: 0px;
+        .ui {
+            opacity: 0.5;
+            transition: opacity 1s linear;
         }
 
         .menu {
+            margin: 0px;
+            padding: 0px;
             width: 64px;
             height: 64px;
             background-repeat: no-repeat;
             background-position-y: 4px;
-        }
-
-        .status {
-            left: 80px;
-            background-color: transparent;
         }
 
         .choices {
@@ -453,10 +455,6 @@
             background-image: url('camera.png');
         }
 
-        #view_status {
-            top: 320px;
-        }
-
         #views {
             display: none;
             top: 250px;
@@ -501,11 +499,11 @@
     <canvas id="canvas"></canvas>
 
     <div id="controls">
-        <div class="overlay" id="motion_status">Enable Motion</div>
-        <div class="overlay" id="reload"></div>
-        <div class="overlay" id="toggle"></div>
+        <div class="overlay ui" id="motion_status">Enable Motion</div>
+        <div class="overlay ui" id="reload"></div>
+        <div class="overlay ui" id="toggle"></div>
 
-        <div class="overlay menu" id="view"></div>
+        <div class="overlay ui menu" id="view"></div>
         <div class="overlay choices" id="views">
             <div class="view item" id="clock0">Forward</div>
             <div class="view item" id="clock9">Left</div>
@@ -513,11 +511,11 @@
             <div class="view item" id="clock-6">Backward (CW)</div>
             <div class="view item" id="clock6">Backward (CCW)</div>
             <p><hr></p>
-            <div class="view item" id="autohome">Auto Home</div>
+            <div class="item" id="autohome">Auto Home</div>
         </div>
     </div>
 
-    <div id="positioncontainer"><div id="position"></div></div>
+    <div class="ui" id="positioncontainer"><div id="position"></div></div>
 
 </div>
 <div id="help">
