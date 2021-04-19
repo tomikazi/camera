@@ -101,6 +101,7 @@ iOS device and with the camera positions shortcut menu activated:
 ![Camera UI](docs/ui-sample.jpeg)
 
 The pan/tilt position and range indicator box is shown at the bottom and will be visible only when the camera is in motion.
+You can see a brief [demo of the camera operation on YouTube](https://youtu.be/4mN1LiofYqg).
 
 # REST API
 The broker also supports a simple [REST API](/docs/api.md) using which other applications can query and control the remote cameras.
