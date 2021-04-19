@@ -315,19 +315,19 @@
                 $('#help').css('opacity', 0);
             }
 
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Tesla/i.test(navigator.userAgent)) {
                 $('#help').css('display', 'none');
                 $('#motion_status').click(requestDeviceMotionPermissions);
                 setTimeout(deviceOrientation, 100);
                 setTimeout(requestDeviceMotionPermissions, 500);
 
-                if (/Android/i.test(navigator.userAgent)) {
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    // Register touch events for others....
+                    $('#container').on('touchstart', tStart).on('touchmove', tMove).on('touchend', tEnd);
+                } else {
                     $('#motion_status').css('display', 'none');
                     // Register touch events for Android....
                     $('#container').on('touchstart', atStart).on('touchmove', atMove).on('touchend', tEnd);
-                } else {
-                    // Register touch events for others....
-                    $('#container').on('touchstart', tStart).on('touchmove', tMove).on('touchend', tEnd);
                 }
 
             } else {
