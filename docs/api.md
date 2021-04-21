@@ -43,10 +43,6 @@ curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c77
   }
 }
 
-# Trigger autohome
-curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "autohome" }'
-
 # Pan to 9 o'clock position; tilt level at 0
 curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
     -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pos": "9" }'
@@ -54,4 +50,9 @@ curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c77
 # Pan to specific coordinates
 curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
     -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pan": -1050, "tilt": 200 }'
+
+# Move left (counter-clockwise) and upward relative to the current orientation
+curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveBy", "pan": 100, "tilt": 20 }'
+
 ```

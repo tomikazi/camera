@@ -58,7 +58,7 @@ class Camera {
     }
 
     get_camera_feed() {
-        this.streamer = spawn('raspivid', ['-t', '0', '-o', '-', '-w', this.options.width, '-h', this.options.height, '-fps', this.options.fps, '-pf', 'baseline']);
+        this.streamer = spawn('raspivid', ['-t', '0', '-o', '-', '-w', this.options.width, '-h', this.options.height, '-fps', this.options.fps, '--profile', 'baseline', '--flush']);
         this.streamer.on('exit', function (code) {
             if (code)
                 console.log('raspivid failure', code);
