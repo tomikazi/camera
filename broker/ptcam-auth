@@ -1,5 +1,8 @@
 #!/bin/bash
 
+BROKER="localhost"
+TOKENS="/var/broker/tokens"
+
 # Simple utility to grant and revoke authorization tokens for the pan/tilt camera
 
 function usage () {
@@ -17,20 +20,20 @@ cd $(dirname $0)
 
 case "${2:-list}" in
 list)
-        [ -n ${camera} ] && grep " ${camera} " tokens || cat tokens
+        [ -n ${camera} ] && grep " ${camera} " ${TOKENS} || cat ${TOKENS}
         ;;
 grant)
-        echo ${3:-guest}: ${camera} $(uuidgen) >> tokens
-        t=$(grep "${3:-guest}: ${camera} " tokens | cut -d\  -f3)
-        [ -n $t ] && echo "https://vachuska.com/camera/?id=${camera}&t=$t"
+        echo ${3:-guest}: ${camera} $(uuidgen) >> ${TOKENS}
+        t=$(grep "${3:-guest}: ${camera} " ${TOKENS} | cut -d\  -f3)
+        [ -n $t ] && echo "https://${BROKER}/camera/?id=${camera}&t=$t"
         ;;
 revoke)
-        egrep -v "^${3:-guest}: ${camera} " tokens > tokens.save
-        mv tokens.save tokens
+        egrep -v "^${3:-guest}: ${camera} " ${TOKENS} > ${TOKENS}.save
+        mv ${TOKENS}.save ${TOKENS}
         ;;
 *)
-        t=$(grep "^${2:-guest}: ${camera} " tokens | cut -d\  -f3)
-        [ -n $t ] && echo "https://vachuska.com/camera/?id=${camera}&t=$t"
+        t=$(grep "^${2:-guest}: ${camera} " ${TOKENS} | cut -d\  -f3)
+        [ -n $t ] && echo "https://${BROKER}/camera/?id=${camera}&t=$t"
         ;;
 esac
 
