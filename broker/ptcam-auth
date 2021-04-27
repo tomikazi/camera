@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BROKER="localhost"
+BROKER="${BROKER:-http://localhost:5000}"
 TOKENS="/var/broker/tokens"
 
 # Simple utility to grant and revoke authorization tokens for the pan/tilt camera
@@ -15,6 +15,7 @@ function usage () {
 camera="${1}"
 
 [ "$camera" = "--help" ] && usage && exit 1
+[ ! -f ${TOKENS} ] && touch ${TOKENS}
 
 cd $(dirname $0)
 
@@ -25,7 +26,7 @@ list)
 grant)
         echo ${3:-guest}: ${camera} $(uuidgen) >> ${TOKENS}
         t=$(grep "${3:-guest}: ${camera} " ${TOKENS} | cut -d\  -f3)
-        [ -n $t ] && echo "https://${BROKER}/camera/?id=${camera}&t=$t"
+        [ -n $t ] && echo "${BROKER}/camera/?id=${camera}&t=$t"
         ;;
 revoke)
         egrep -v "^${3:-guest}: ${camera} " ${TOKENS} > ${TOKENS}.save
@@ -33,7 +34,7 @@ revoke)
         ;;
 *)
         t=$(grep "^${2:-guest}: ${camera} " ${TOKENS} | cut -d\  -f3)
-        [ -n $t ] && echo "https://${BROKER}/camera/?id=${camera}&t=$t"
+        [ -n $t ] && echo "${BROKER}/camera/?id=${camera}&t=$t"
         ;;
 esac
 
