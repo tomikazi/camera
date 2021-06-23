@@ -16,6 +16,8 @@
                 context = canvas.getContext('2d');
             var track_face = true,
                 main_face = new Object();
+            const SCALE_CONSTANT = 100., // movement on screen (normalize over size of canvas) to angle proportion
+                CV_ANGLE_ERROR_TOLERANCE = 4.; // open cv inconsistency between runs tolerance (to assume that face hasn't moved)
             var cameraName = 'Camera',
                 positionTimer = null,
                 wsavc = null,
@@ -53,15 +55,14 @@
                             let faces = e.data.faces;
                             paintCanvas();
                             if (faces.length > 0) {
-                                main_face = faces[0]
-                                let scale_constant = 0.2,
-                                    pan = (canvas.width / 2 - (main_face.x + main_face.width / 2)) * scale_constant,
-                                    tilt = (canvas.height / 2 - (main_face.y + main_face.height / 2)) * scale_constant;
-
-                                if (connected) {
-                                    wsavc.ws.send('{"pan": ' + pan + ', "tilt": ' + tilt + ', "relative": true, "slow":false}');
+                                let pan = (1 - (2 * faces[0].x + faces[0].width) / canvas.width) * SCALE_CONSTANT,
+                                    tilt = (1 - (2 * faces[0].y + faces[0].height) / canvas.height) * SCALE_CONSTANT;
+                                if (!(Math.abs(pan) < CV_ANGLE_ERROR_TOLERANCE && Math.abs(tilt) < CV_ANGLE_ERROR_TOLERANCE)) {
+                                    main_face = faces[0]
+                                    if (connected) {
+                                        wsavc.ws.send('{"pan": ' + pan + ', "tilt": ' + tilt + ', "relative": true, "slow":true}');
+                                    }
                                 }
-
                             }
                             break
                         }
