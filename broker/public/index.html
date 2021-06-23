@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,10 +15,16 @@
         $(document).ready(function() {
             var canvas = $('#canvas')[0],
                 context = canvas.getContext('2d');
-            var track_face = true,
-                main_face = new Object();
-            const SCALE_CONSTANT = 100., // movement on screen (normalize over size of canvas) to angle proportion
-                CV_ANGLE_ERROR_TOLERANCE = 4.; // open cv inconsistency between runs tolerance (to assume that face hasn't moved)
+            var track_face = false,
+                main_face = new Object(),
+                average_x = 0.,
+                average_y;
+            // movement on screen (normalize over size of canvas) to angle proportion
+            const SCALE_CONSTANT = 100.,
+                // open cv inconsistency between runs tolerance (to assume that face hasn't moved). This will ignore movement within this bound
+                CV_ANGLE_ERROR_TOLERANCE = 4.,
+                // open cv misidentifies objects as faces. This is the maximum amount of tilt or pan that would be allowed. Otherwise, movement is ignored
+                CV_MISS_ERROR_TOLERANCE = 20.;
             var cameraName = 'Camera',
                 positionTimer = null,
                 wsavc = null,
@@ -55,12 +62,15 @@
                             let faces = e.data.faces;
                             paintCanvas();
                             if (faces.length > 0) {
+                                // pan and tilt range between -SCALE_CONSTANT and + SCALE_CONSTANT
                                 let pan = (1 - (2 * faces[0].x + faces[0].width) / canvas.width) * SCALE_CONSTANT,
                                     tilt = (1 - (2 * faces[0].y + faces[0].height) / canvas.height) * SCALE_CONSTANT;
                                 if (!(Math.abs(pan) < CV_ANGLE_ERROR_TOLERANCE && Math.abs(tilt) < CV_ANGLE_ERROR_TOLERANCE)) {
-                                    main_face = faces[0]
-                                    if (connected) {
-                                        wsavc.ws.send('{"pan": ' + pan + ', "tilt": ' + tilt + ', "relative": true, "slow":true}');
+                                    if (Math.abs(pan) > CV_MISS_ERROR_TOLERANCE || Math.abs(tilt) > CV_MISS_ERROR_TOLERANCE) {
+                                        main_face = faces[0]
+                                        if (connected) {
+                                            wsavc.ws.send('{"pan": ' + pan + ', "tilt": ' + tilt + ', "relative": true, "slow":true}');
+                                        }
                                     }
                                 }
                             }
@@ -142,15 +152,22 @@
                     }, [imageData.data.buffer]);
                 }
             }
-            $('#toggleTrack').click(() => {
-                if (track_face) {
-                    $('#toggleTrack').html("Enable Tracking")
-                    paintCanvas()
-                } else {
-                    $('#toggleTrack').html("Disable Tracking")
-                }
+
+            function toggleTracking() {
                 track_face = !track_face
-            })
+                if (track_face) {
+                    paintCanvas()
+                    $('#tracking').css("background-image", "url(tracking.png)")
+                } else {
+                    $('#tracking').css("background-image", "url(not_tracking.png)")
+                }
+            }
+
+            function applyClassTrack() {
+                if (track_face) {
+                    $('#tracking').css("background-image", "url(tracking.png)")
+                }
+            }
 
             function startStream() {
                 if (wsavc) {
@@ -275,6 +292,8 @@
 
                 } else if (e.key === 'h') {
                     $('#help').css('opacity', $('#help').css('opacity') === '0' ? 1 : 0);
+                } else if (e.key === 't') {
+                    toggleTracking()
                 }
             }
 
@@ -389,6 +408,7 @@
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Tesla/i.test(navigator.userAgent)) {
                 $('#help').css('display', 'none');
                 $('#motion_status').click(requestDeviceMotionPermissions);
+                $('#tracking').click(toggleTracking);
                 setTimeout(deviceOrientation, 100);
                 setTimeout(requestDeviceMotionPermissions, 500);
 
@@ -473,6 +493,10 @@
             transition: opacity 1s linear;
         }
         
+        .active {
+            opacity: 1;
+        }
+        
         .menu {
             margin: 0px;
             padding: 0px;
@@ -530,6 +554,18 @@
             top: 250px;
         }
         
+        #tracking {
+            margin: 0px;
+            padding: 0px;
+            width: 64px;
+            height: 64px;
+            top: 80px;
+            top: 440px;
+            background-image: url('not_tracking.png');
+            background-repeat: no-repeat;
+            background-position-y: 4px;
+        }
+        
         #positioncontainer {
             opacity: 0;
             transition: opacity 1s linear;
@@ -572,6 +608,7 @@
             <div class="overlay ui" id="motion_status">Enable Motion</div>
             <div class="overlay ui" id="reload"></div>
             <div class="overlay ui" id="toggle"></div>
+            <div class="overlay ui" id="tracking"></div>
 
             <div class="overlay ui menu" id="view"></div>
             <div class="overlay choices" id="views">
@@ -601,6 +638,9 @@
         </p>
         <p>
             To initiate the auto-homing sequence, press <em>Ctrl-Home</em>.
+        </p>
+        <p>
+            To toggle face tracking, press <em>t</em> key.
         </p>
         <p>
             To hide/show this message, press the <em>h</em> key.
