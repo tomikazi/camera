@@ -8,7 +8,7 @@ while getopts ":d" opt; do
 done
 shift $((OPTIND -1))
 
-dst="pi@${1:-192.168.1.105}"
+dst="pi@${1:-cam1.local}"
 port=${2:-22}
 
 function killIt {
