@@ -1,8 +1,17 @@
 #!/bin/bash
+justData=false; allFiles=false;
 
-while getopts ":d" opt; do
+while getopts ":dah" opt; do
   case ${opt} in
-    d) let justData=true;
+    h) 
+      echo "  -h to show this help message";
+      echo "  -d to copy only data without (re)starting the broker";
+      echo "  -a to copy all js files in broker, package.json, ptcam-auth, all files in broker/lib, and all files in broker/public, otherwise excludes haarcascade*, opencv*, app.png";
+      exit 0
+      ;;
+    d) justData=true;
+      ;;
+    a) allFiles=true;
       ;;
   esac
 done
@@ -15,9 +24,21 @@ function killIt {
     ssh -p $port $dst "pid=\$(ps -ef | grep broker.js | grep -v grep | grep -v sudo | cut -c10-15); test -n \"\$pid\" && sudo xargs kill -9 \$pid"
 }
 
-scp -r -P $port -r *.js package.json public/ lib/ ptcam-auth $dst:broker
 
-if [ -z $justData ]; then
+shopt -s extglob
+# if allFiles is false, then it was not specified => do not copy certain files from broker/public
+if ($allFiles); then 
+  scp -r -P $port -r public/ $dst:broker/public
+else 
+  scp -P $port public/!(http-live-player*|haarcascade*|opencv*|app.png) $dst:broker/public
+fi
+shopt -u extglob
+
+# the rest of the files in broker
+scp -r -P $port -r *.js package.json lib/ ptcam-auth $dst:broker 
+
+# if justData is false, then run the broker
+if !($justData); then
   killIt
   trap killIt EXIT
   ssh -p $port $dst "cd broker; sudo node broker.js"
