@@ -130,7 +130,6 @@
 
             function onstatus(d) {
                 if (d.data && !d.data.err) {
-                    // console.log(d.data)
                     if (d.data.name === 'Pan' || d.data.name === 'Tilt') {
                         if (d.data.name === 'Pan') pan = d.data.pos;
                         if (d.data.name === 'Tilt') tilt = d.data.pos;
