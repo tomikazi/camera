@@ -54,13 +54,13 @@
                     case 'Loaded':
                         {
                             console.log("Worker fully loaded opencv")
-                            paintCanvas();
+                            paintTracker();
                             break
                         }
                     case 'Processed':
                         {
                             let faces = e.data.faces;
-                            paintCanvas();
+                            paintTracker();
                             if (faces.length > 0) {
                                 // pan and tilt range between -SCALE_CONSTANT and + SCALE_CONSTANT
                                 let pan = (1 - (2 * faces[0].x + faces[0].width) / canvas.width) * SCALE_CONSTANT,
@@ -121,24 +121,29 @@
                 positionTimer = setTimeout(function() {
                     $('#positioncontainer').css('opacity', 0);
                     $('.ui').css('opacity', 0);
+                    // if tracking face, would like to keep indicatior up on screen
+                    if (track_face) {
+                        $('#tracking').css('opacity', 0.5);
+                    }
                 }, 5000);
             }
 
             function onstatus(d) {
                 if (d.data && !d.data.err) {
-                    if (d.data.name === 'Pan') {
-                        pan = d.data.pos;
-                    } else if (d.data.name === 'Tilt') {
-                        tilt = d.data.pos;
+                    if (d.data.name === 'Pan' || d.data.name === 'Tilt') {
+                        if (d.data.nam === 'Pan') pan = d.data.pos;
+                        if (d.data.nam === 'Tilt') tilt = d.data.pos;
+                        px = map(pan, panMin, panMax, 0, 305);
+                        py = map(-tilt, tiltMin, tiltMax, 0, 75);
+                        $('#position').css('left', px).css('top', py);
+                        showUIOverlay();
+                    } else if (d.data.name === 'StartTrack') {
+                        verifiedStartTracking()
                     }
-                    px = map(pan, panMin, panMax, 0, 305);
-                    py = map(-tilt, tiltMin, tiltMax, 0, 75);
-                    $('#position').css('left', px).css('top', py);
-                    showUIOverlay();
                 }
             }
 
-            function paintCanvas() {
+            function paintTracker() {
                 if (track_face) {
                     context.beginPath();
                     context.rect(main_face.x, main_face.y, main_face.width, main_face.height);
@@ -153,20 +158,23 @@
                 }
             }
 
-            function toggleTracking() {
-                track_face = !track_face
-                if (track_face) {
-                    paintCanvas()
-                    $('#tracking').css("background-image", "url(tracking.png)")
+            function attemptToggleTracking() {
+                if (!track_face) {
+                    wsavc.ws.send('REQUESTTRACK')
                 } else {
+                    // to fade out after an interval
                     $('#tracking').css("background-image", "url(not_tracking.png)")
+                    showUIOverlay();
+                    wsavc.ws.send('STOPTRACK')
+                    track_face = false;
                 }
             }
 
-            function applyClassTrack() {
-                if (track_face) {
-                    $('#tracking').css("background-image", "url(tracking.png)")
-                }
+            function verifiedStartTracking() {
+                track_face = true;
+                showUIOverlay();
+                paintTracker();
+                $('#tracking').css("background-image", "url(tracking.png)");
             }
 
             function startStream() {
@@ -293,7 +301,7 @@
                 } else if (e.key === 'h') {
                     $('#help').css('opacity', $('#help').css('opacity') === '0' ? 1 : 0);
                 } else if (e.key === 't') {
-                    toggleTracking()
+                    attemptToggleTracking()
                 }
             }
 
@@ -408,7 +416,7 @@
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Tesla/i.test(navigator.userAgent)) {
                 $('#help').css('display', 'none');
                 $('#motion_status').click(requestDeviceMotionPermissions);
-                $('#tracking').click(toggleTracking);
+                $('#tracking').click(attemptToggleTracking);
                 setTimeout(deviceOrientation, 100);
                 setTimeout(requestDeviceMotionPermissions, 500);
 
@@ -424,6 +432,7 @@
             } else {
                 $('#motion_status').css('display', 'none');
                 $('#reload').css('display', 'none');
+                $('#tracking').css('opacity', 0);
                 $('.menu').css('display', 'none');
                 $('#positioncontainer').css('top', 600);
 
