@@ -39,7 +39,7 @@ function createFileFromUrl(path, url, callback) {
         }
     };
     request.send();
-};
+}
 
 let classifier;
 /**

@@ -79,7 +79,6 @@ class StreamRelay {
 
         socket.on('message', function(data) {
             if (data[0] === '{') {
-                let d = JSON.parse(data);
                 // Relay command to the target camera
                 if (self.cameras.has(name)) {
                     self.cameras.get(name).socket.send(data);
