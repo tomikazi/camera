@@ -104,3 +104,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Open cv calibration images
+opencv_calib/

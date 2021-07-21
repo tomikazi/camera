@@ -1,17 +1,30 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="app.png">
-    <meta name="viewport" content="width=1280, initial-scale=0.66, maximum-scale=1, user-scalable=no"/>
+    <meta name="viewport" content="width=1280, initial-scale=0.66, maximum-scale=1, user-scalable=no" />
 
     <title>Pan &amp Tilt Camera</title>
 
     <script type="text/javascript" src="//code.jquery.com/jquery-1.12.4.min.js"></script>
     <script type="text/javascript" src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script type="text/javascript" src="http-live-player.js">;</script>
-    <script type="text/javascript" charset="utf-8">
-        $(document).ready(function () {
-            var canvas = $('#canvas')[0];
+    <script type="text/javascript" src="http-live-player.js"></script>
+    <script>
+        $(document).ready(function() {
+            var canvas = $('#canvas')[0],
+                context = canvas.getContext('2d');
+            var track_face = false,
+                main_face = new Object(),
+                average_x = 0.,
+                average_y;
+            // movement on screen (normalize over size of canvas) to angle proportion
+            const SCALE_CONSTANT = 100.,
+                // open cv inconsistency between runs tolerance (to assume that face hasn't moved). This will ignore movement within this bound
+                CV_ANGLE_ERROR_TOLERANCE = 4.,
+                // open cv misidentifies objects as faces. This is the maximum amount of tilt or pan that would be allowed. Otherwise, movement is ignored
+                CV_MISS_ERROR_TOLERANCE = 20.;
             var cameraName = 'Camera',
                 positionTimer = null,
                 wsavc = null,
@@ -20,17 +33,56 @@
                 controlling = false,
                 zerosSent = false;
 
-            var pan = 0, tilt = 0,
-                panMin = -100 * 16, panMax = 100 * 16,
-                tiltMin = -30 * 16, tiltMax = 30 * 16;
+            var pan = 0,
+                tilt = 0,
+                panMin = -100 * 16,
+                panMax = 100 * 16,
+                tiltMin = -30 * 16,
+                tiltMax = 30 * 16;
 
             let port = location.port ? parseInt(location.port) : (location.protocol === 'https:' ? 443 : 80);
             let protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             var uri = protocol + '//' + location.hostname + ':' + port + location.pathname;
             var params = new URLSearchParams(location.search);
 
+            var workerOpenCV = null;
             cameraName = params.get('id');
             console.log(`Connecting to ${cameraName}`);
+            workerOpenCV = new Worker('./worker.js')
+            workerOpenCV.onmessage = function(e) {
+                switch (e.data.msg) {
+                    case 'Loaded':
+                        {
+                            console.log("Worker fully loaded opencv")
+                            paintTracker();
+                            break
+                        }
+                    case 'Processed':
+                        {
+                            let faces = e.data.faces;
+                            paintTracker();
+                            if (faces.length > 0) {
+                                // pan and tilt range between -SCALE_CONSTANT and + SCALE_CONSTANT
+                                let pan = (1 - (2 * faces[0].x + faces[0].width) / canvas.width) * SCALE_CONSTANT,
+                                    tilt = (1 - (2 * faces[0].y + faces[0].height) / canvas.height) * SCALE_CONSTANT;
+                                if (!(Math.abs(pan) < CV_ANGLE_ERROR_TOLERANCE && Math.abs(tilt) < CV_ANGLE_ERROR_TOLERANCE)) {
+                                    if (!(Math.abs(pan) > CV_MISS_ERROR_TOLERANCE || Math.abs(tilt) > CV_MISS_ERROR_TOLERANCE)) {
+                                        main_face = faces[0]
+                                        if (connected) {
+                                            wsavc.ws.send('{"pan": ' + pan + ', "tilt": ' + tilt + ', "relative": true, "slow":true}');
+                                        }
+                                    }
+                                }
+                            }
+                            break
+                        }
+                    default:
+                        break
+                }
+            }
+            workerOpenCV.postMessage({
+                msg: 'load'
+            })
 
             connect();
             setInterval(connect, 5000);
@@ -38,12 +90,12 @@
             function connect() {
                 if (!wsavc) {
                     try {
-                        wsavc = new WSAvcPlayer(canvas, "webgl", 1, 35);
+                        wsavc = new WSAvcPlayer(canvas, "2d", 1, 35);
                         wsavc.onopen = function() {
                             setTimeout(startStreamingControls, 500);
                         }
 
-                        wsavc.onclose = function () {
+                        wsavc.onclose = function() {
                             wsavc = null;
                             connected = false;
                             controlling = false;
@@ -69,21 +121,60 @@
                 positionTimer = setTimeout(function() {
                     $('#positioncontainer').css('opacity', 0);
                     $('.ui').css('opacity', 0);
+                    // if tracking face, would like to keep indicatior up on screen
+                    if (track_face) {
+                        $('#tracking').css('opacity', 0.5);
+                    }
                 }, 5000);
             }
 
             function onstatus(d) {
                 if (d.data && !d.data.err) {
-                    if (d.data.name === 'Pan') {
-                        pan = d.data.pos;
-                    } else if (d.data.name === 'Tilt') {
-                        tilt = d.data.pos;
+                    if (d.data.name === 'Pan' || d.data.name === 'Tilt') {
+                        if (d.data.name === 'Pan') pan = d.data.pos;
+                        if (d.data.name === 'Tilt') tilt = d.data.pos;
+                        px = map(pan, panMin, panMax, 0, 305);
+                        py = map(-tilt, tiltMin, tiltMax, 0, 75);
+                        $('#position').css('left', px).css('top', py);
+                        showUIOverlay();
+                    } else if (d.data.name === 'StartTrack') {
+                        verifiedStartTracking()
                     }
-                    px = map(pan, panMin, panMax, 0, 305);
-                    py = map(-tilt, tiltMin, tiltMax, 0, 75);
-                    $('#position').css('left', px).css('top', py);
-                    showUIOverlay();
                 }
+            }
+
+            function paintTracker() {
+                if (track_face) {
+                    context.beginPath();
+                    context.rect(main_face.x, main_face.y, main_face.width, main_face.height);
+                    context.stroke();
+                    imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    workerOpenCV.postMessage({
+                        msg: 'data',
+                        height: canvas.height,
+                        width: canvas.width,
+                        data: imageData.data.buffer,
+                    }, [imageData.data.buffer]);
+                }
+            }
+
+            function attemptToggleTracking() {
+                if (!track_face) {
+                    wsavc.ws.send('REQUESTTRACK')
+                } else {
+                    // to fade out after an interval
+                    $('#tracking').css("background-image", "url(not_tracking.png)")
+                    showUIOverlay();
+                    wsavc.ws.send('STOPTRACK')
+                    track_face = false;
+                }
+            }
+
+            function verifiedStartTracking() {
+                track_face = true;
+                showUIOverlay();
+                paintTracker();
+                $('#tracking').css("background-image", "url(tracking.png)");
             }
 
             function startStream() {
@@ -136,8 +227,8 @@
                 if (orient) {
                     let tilt = e.rotationRate.beta * (orient < 0 ? +1 : -1),
                         pan = e.rotationRate.alpha * (orient < 0 ? -1 : +1),
-                        tv = Math.abs(tilt) > 0.25 ? tilt.toFixed(2)/4 : 0.0,
-                        pv = Math.abs(pan) > 0.25 ? pan.toFixed(2)/4 : 0.0
+                        tv = Math.abs(tilt) > 0.25 ? tilt.toFixed(2) / 4 : 0.0,
+                        pv = Math.abs(pan) > 0.25 ? pan.toFixed(2) / 4 : 0.0
 
                     if (connected && controlling) {
                         if (tv && pv || !zerosSent) {
@@ -150,7 +241,7 @@
 
             function deviceOrientation() {
                 set_status('motion', window.orientation === 0 ? 'Not in landscape orientation' :
-                                    motionGranted ? 'None' : 'Enable Motion');
+                    motionGranted ? 'None' : 'Enable Motion');
             }
 
             function requestDeviceMotionPermissions() {
@@ -208,7 +299,9 @@
                     }
 
                 } else if (e.key === 'h') {
-                    $('#help').css('opacity',  $('#help').css('opacity') === '0' ? 1 : 0);
+                    $('#help').css('opacity', $('#help').css('opacity') === '0' ? 1 : 0);
+                } else if (e.key === 't') {
+                    attemptToggleTracking()
                 }
             }
 
@@ -243,13 +336,18 @@
             $('#reload').click(forceReload);
             $('#toggle').click(toggleControls);
 
-            $('.view.item').click(function(e) { pick('view', e)});
-            $('#view').click(function() { menu('view')});
+            $('.view.item').click(function(e) {
+                pick('view', e)
+            });
+            $('#view').click(function() {
+                menu('view')
+            });
 
 
             // Touch and mouse events
             let tracking = false;
-            let lp = 0, lt = 0;
+            let lp = 0,
+                lt = 0;
 
             // Mouse event handlers
             function mStart(e) {
@@ -318,6 +416,7 @@
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Tesla/i.test(navigator.userAgent)) {
                 $('#help').css('display', 'none');
                 $('#motion_status').click(requestDeviceMotionPermissions);
+                $('#tracking').click(attemptToggleTracking);
                 setTimeout(deviceOrientation, 100);
                 setTimeout(requestDeviceMotionPermissions, 500);
 
@@ -333,6 +432,7 @@
             } else {
                 $('#motion_status').css('display', 'none');
                 $('#reload').css('display', 'none');
+                $('#tracking').css('opacity', 0);
                 $('.menu').css('display', 'none');
                 $('#positioncontainer').css('top', 600);
 
@@ -362,13 +462,13 @@
             font-family: Arial, Helvetica, Sans-Serif, serif;
             font-size: 24px;
         }
-
+        
         #container {
             width: 1280px;
             height: 720px;
             position: relative;
         }
-
+        
         #canvas {
             width: 100%;
             height: 100%;
@@ -378,13 +478,13 @@
             background: #333;
             z-index: -1;
         }
-
+        
         #controls {
             width: 100%;
             padding: 5px 10px 5px 10px;
             position: fixed;
         }
-
+        
         .overlay {
             cursor: pointer;
             border-radius: 8px;
@@ -396,12 +496,16 @@
             background-color: #444;
             opacity: 0.5;
         }
-
+        
         .ui {
             opacity: 0.5;
             transition: opacity 1s linear;
         }
-
+        
+        .active {
+            opacity: 1;
+        }
+        
         .menu {
             margin: 0px;
             padding: 0px;
@@ -410,18 +514,17 @@
             background-repeat: no-repeat;
             background-position-y: 4px;
         }
-
+        
         .choices {
             margin-top: 0px;
             left: 80px;
         }
-
-
+        
         .item {
             padding: 8px 24px;
             cursor: pointer;
         }
-
+        
         #reload {
             margin: 0px;
             padding: 0px;
@@ -432,7 +535,7 @@
             background-repeat: no-repeat;
             background-position-y: 4px;
         }
-
+        
         #toggle {
             display: none;
             margin: 0px;
@@ -444,22 +547,34 @@
             background-repeat: no-repeat;
             background-position-y: 4px;
         }
-
+        
         #motion_status {
             top: 10px;
             left: 0px;
         }
-
+        
         #view {
             top: 320px;
             background-image: url('camera.png');
         }
-
+        
         #views {
             display: none;
             top: 250px;
         }
-
+        
+        #tracking {
+            margin: 0px;
+            padding: 0px;
+            width: 64px;
+            height: 64px;
+            top: 80px;
+            top: 440px;
+            background-image: url('not_tracking.png');
+            background-repeat: no-repeat;
+            background-position-y: 4px;
+        }
+        
         #positioncontainer {
             opacity: 0;
             transition: opacity 1s linear;
@@ -470,7 +585,7 @@
             top: 540px;
             position: relative;
         }
-
+        
         #position {
             position: relative;
             top: 37px;
@@ -480,7 +595,7 @@
             border-radius: 8px;
             background-color: #ccc;
         }
-
+        
         #help {
             position: relative;
             width: 1280px;
@@ -490,50 +605,56 @@
             opacity: 1;
             transition: opacity 0.3s linear;
         }
-
     </style>
 
 </head>
+
 <body>
-<div id="container">
-    <canvas id="canvas"></canvas>
+    <div id="container">
+        <canvas id="canvas"></canvas>
 
-    <div id="controls">
-        <div class="overlay ui" id="motion_status">Enable Motion</div>
-        <div class="overlay ui" id="reload"></div>
-        <div class="overlay ui" id="toggle"></div>
+        <div id="controls">
+            <div class="overlay ui" id="motion_status">Enable Motion</div>
+            <div class="overlay ui" id="reload"></div>
+            <div class="overlay ui" id="toggle"></div>
+            <div class="overlay ui" id="tracking"></div>
 
-        <div class="overlay ui menu" id="view"></div>
-        <div class="overlay choices" id="views">
-            <div class="view item" id="clock0">Forward</div>
-            <div class="view item" id="clock9">Left</div>
-            <div class="view item" id="clock3">Right</div>
-            <div class="view item" id="clock-6">Backward (CW)</div>
-            <div class="view item" id="clock6">Backward (CCW)</div>
-            <p><hr></p>
-            <div class="view item" id="autohome">Auto Home</div>
+            <div class="overlay ui menu" id="view"></div>
+            <div class="overlay choices" id="views">
+                <div class="view item" id="clock0">Forward</div>
+                <div class="view item" id="clock9">Left</div>
+                <div class="view item" id="clock3">Right</div>
+                <div class="view item" id="clock-6">Backward (CW)</div>
+                <div class="view item" id="clock6">Backward (CCW)</div>
+                <p>
+                    <hr>
+                </p>
+                <div class="view item" id="autohome">Auto Home</div>
+            </div>
         </div>
+
+        <div class="ui" id="positioncontainer">
+            <div id="position"></div>
+        </div>
+
     </div>
-
-    <div class="ui" id="positioncontainer"><div id="position"></div></div>
-
-</div>
-<div id="help">
-    <p>
-        To control pan/tilt you can use the keyboard arrow keys. Hold down the <em>Shift</em> key for fine-grained
-        position control.
-        Alternatively, you can pan around the real-world using click-and-drag on the camera viewport.
-    </p>
-    <p>
-        You can also press the <em>0</em>, <em>3</em>, <em>9</em> and <em>6</em> key to quickly
-        navigate to the home (12 o'clock) position or to the respective 3, 9 and 6 o'clock positions.
-    </p>
-    <p>
-        To initiate the auto-homing sequence, press <em>Ctrl-Home</em>.
-    </p>
-    <p>
-        To hide/show this message, press the <em>h</em> key.
-    </p>
-</div>
+    <div id="help">
+        <p>
+            To control pan/tilt you can use the keyboard arrow keys. Hold down the <em>Shift</em> key for fine-grained position control. Alternatively, you can pan around the real-world using click-and-drag on the camera viewport.
+        </p>
+        <p>
+            You can also press the <em>0</em>, <em>3</em>, <em>9</em> and <em>6</em> key to quickly navigate to the home (12 o'clock) position or to the respective 3, 9 and 6 o'clock positions.
+        </p>
+        <p>
+            To initiate the auto-homing sequence, press <em>Ctrl-Home</em>.
+        </p>
+        <p>
+            To toggle face tracking, press <em>t</em> key.
+        </p>
+        <p>
+            To hide/show this message, press the <em>h</em> key.
+        </p>
+    </div>
 </body>
+
 </html>
