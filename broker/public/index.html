@@ -66,7 +66,7 @@
                                 let pan = (1 - (2 * faces[0].x + faces[0].width) / canvas.width) * SCALE_CONSTANT,
                                     tilt = (1 - (2 * faces[0].y + faces[0].height) / canvas.height) * SCALE_CONSTANT;
                                 if (!(Math.abs(pan) < CV_ANGLE_ERROR_TOLERANCE && Math.abs(tilt) < CV_ANGLE_ERROR_TOLERANCE)) {
-                                    if (Math.abs(pan) > CV_MISS_ERROR_TOLERANCE || Math.abs(tilt) > CV_MISS_ERROR_TOLERANCE) {
+                                    if (!(Math.abs(pan) > CV_MISS_ERROR_TOLERANCE || Math.abs(tilt) > CV_MISS_ERROR_TOLERANCE)) {
                                         main_face = faces[0]
                                         if (connected) {
                                             wsavc.ws.send('{"pan": ' + pan + ', "tilt": ' + tilt + ', "relative": true, "slow":true}');
