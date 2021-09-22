@@ -31,6 +31,7 @@
 
             cameraName = params.get('id');
             console.log(`Connecting to ${cameraName}`);
+            document.title = cameraName + ' - Pan &amp Tilt Camera';
 
             connect();
             setInterval(connect, 5000);
@@ -322,6 +323,10 @@
                 setTimeout(requestDeviceMotionPermissions, 500);
 
                 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    if (location.protocol !== 'https:') {
+                        $('#motion_status').css('display', 'none');
+                    }
+
                     // Register touch events for others....
                     $('#container').on('touchstart', tStart).on('touchmove', tMove).on('touchend', tEnd);
                 } else {
