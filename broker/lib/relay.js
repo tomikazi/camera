@@ -2,6 +2,7 @@
 
 const WebSocketServer = require('ws').Server;
 const merge = require('mout/object/merge');
+const StreamRecorder = require('./recorder');
 
 class StreamRelay {
 
@@ -42,6 +43,7 @@ class StreamRelay {
                     name = d.name;
                     console.log(`Camera ${name} registered`);
                     camera.name = name;
+                    camera.recorder = new StreamRecorder(name);
                     self.cameras.set(name, camera);
                     self.update_camera_light(name);
                 } else if (d.action === 'status') {
@@ -52,8 +54,13 @@ class StreamRelay {
                     }
                 }
 
-            } else if (camera.initMessages.length < 2) {
-                camera.initMessages.push(data);
+            } else {
+                if (camera.recorder) {
+                    camera.recorder.record(data);
+                }
+                if (camera.initMessages.length < 2) {
+                    camera.initMessages.push(data);
+                }
             }
 
             // Relay message to all camera viewers

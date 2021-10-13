@@ -36,6 +36,7 @@ const getCamera = function (req, res) {
             camera: camera.name,
             viewers: v,
             pos: camera.pos,
+            recording: camera.recorder.stream != null
         });
     }
 }
@@ -66,6 +67,10 @@ const controlCamera = function (req, res) {
             camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": true}');
         } else if (cmd === 'autohome') {
             camera.socket.send('{"cmd": "home"}');
+        } else if (cmd === 'startRecording') {
+            camera.recorder.start();
+        } else if (cmd === 'stopRecording') {
+            camera.recorder.stop();
         }
 
         res.status(200).send();

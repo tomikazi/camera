@@ -4,8 +4,8 @@ const http = require('http');
 const express = require('express');
 
 const WebStreamerServer = require('./lib/relay');
-const gatekeeper = require('./lib/gatekeeper')
-const api = require('./lib/api')
+const gatekeeper = require('./lib/gatekeeper');
+const api = require('./lib/api');
 
 const url = '/camera';
 const app = express();
