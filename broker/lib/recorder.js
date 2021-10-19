@@ -5,7 +5,7 @@ const path = require("path");
 
 const recordingsDir = '/var/broker/recordings';
 
-const chunkLength = 1073741824/10;
+const chunkLength = 1073741824 / 10;
 
 class StreamRecorder {
 
@@ -16,6 +16,9 @@ class StreamRecorder {
         }
 
         this.cameraDir = path.join(recordingsDir, name);
+        this.spsNAL = null;
+        this.ppsNAL = null;
+        this.syncNAL = null;
         if (!fs.existsSync(this.cameraDir)) {
             fs.mkdirSync(this.cameraDir);
         }
@@ -37,6 +40,7 @@ class StreamRecorder {
     rollover(restart) {
         if (this.stream) {
             this.stream.end();
+            this.stream = null;
         }
         let current = path.join(this.cameraDir, 'current.264');
         this.save(current);
@@ -44,9 +48,17 @@ class StreamRecorder {
         this.length = 0;
         if (restart) {
             this.stream = fs.createWriteStream(current);
+            if (this.spsNAL) {
+                this.record(this.spsNAL);
+            }
+            if (this.ppsNAL) {
+                this.record(this.ppsNAL);
+            }
+            if (this.syncNAL) {
+                this.record(this.syncNAL);
+            }
             console.log(`Started new recording as ${current}`);
         } else {
-            this.stream = null;
             console.log('Stopped recording');
         }
     }
@@ -64,16 +76,39 @@ class StreamRecorder {
     }
 
     record(data) {
+        let readyToRoll = false;
+        if (data[0] === 0 && data[1] === 0) {
+            let nalIndex = 0;
+            if (data[2] === 1) {
+                nalIndex = 3;
+            } else if (data[2] === 0 && data[3] === 1) {
+                nalIndex = 4;
+            }
+
+            if (nalIndex) {
+                if ((data[nalIndex] & 0x1F) === 0x07) {
+                    // console.log("SPS NAL");
+                    this.spsNAL = data;
+                } else if ((data[nalIndex] & 0x1F) === 0x08) {
+                    // console.log("PPS NAL");
+                    this.ppsNAL = data;
+                } else if ((data[nalIndex] & 0x1F) === 0x05) {
+                    // console.log("Sync NAL");
+                    this.syncNAL = data;
+                    readyToRoll = true;
+                }
+            }
+        }
+
         if (this.stream) {
             this.stream.write(data);
             this.length = this.length + data.length;
 
-            if (this.length > chunkLength) {
+            if (this.length > chunkLength && readyToRoll) {
                 this.rollover(true);
             }
         }
     }
-
 }
 
 module.exports = StreamRecorder

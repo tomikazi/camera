@@ -30,7 +30,7 @@ class StreamRelay {
         let camera = {
             name: null,
             socket: socket,
-            initMessages: [],
+            recorder: null,
             pos: {pan: 0, tilt: 0}
         };
         let self = this;
@@ -54,13 +54,8 @@ class StreamRelay {
                     }
                 }
 
-            } else {
-                if (camera.recorder) {
-                    camera.recorder.record(data);
-                }
-                if (camera.initMessages.length < 2) {
-                    camera.initMessages.push(data);
-                }
+            } else if (camera.recorder) {
+                camera.recorder.record(data);
             }
 
             // Relay message to all camera viewers
@@ -99,10 +94,13 @@ class StreamRelay {
                     self.clients.set(socket, name);
 
                     if (self.cameras.has(name)) {
-                        console.debug(`Sending ${name} initial ${self.cameras.get(name).initMessages.length} frames`);
-                        self.cameras.get(name).initMessages.forEach(function (data) {
-                            socket.send(data);
-                        });
+                        console.debug(`Sending ${name} initial SPS, PPS and sync frames`);
+                        let cr = self.cameras.get(name).recorder;
+                        if (cr) {
+                            socket.send(cr.spsNAL);
+                            socket.send(cr.ppsNAL);
+                            socket.send(cr.syncNAL);
+                        }
                     }
                     self.update_camera_light(name);
                 }

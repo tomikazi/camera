@@ -20,5 +20,6 @@ scp -r -P $port -r *.js package.json public/ lib/ ptcam-auth $dst:broker
 if [ -z $justData ]; then
   killIt
   trap killIt EXIT
-  ssh -p $port $dst "cd broker; sudo node broker.js"
+  trap killIt TERM
+  ssh -p $port -t $dst "cd broker; sudo node broker.js"
 fi
