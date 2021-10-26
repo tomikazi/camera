@@ -5,20 +5,24 @@ const path = require("path");
 
 const recordingsDir = '/var/broker/recordings';
 
+// Record up-to 40 100MiB chunks, so ~4GiB.
+const maxChunks = 40;
 const chunkLength = 1073741824 / 10;
 
 class StreamRecorder {
 
     constructor(name) {
+        this.stream = null;
+        this.spsNAL = null;
+        this.ppsNAL = null;
+        this.syncNAL = null;
+
         if (!fs.existsSync(recordingsDir) || !fs.lstatSync(recordingsDir).isDirectory()) {
             console.log('Recordings directory not found; recording is disabled');
             return;
         }
 
         this.cameraDir = path.join(recordingsDir, name);
-        this.spsNAL = null;
-        this.ppsNAL = null;
-        this.syncNAL = null;
         if (!fs.existsSync(this.cameraDir)) {
             fs.mkdirSync(this.cameraDir);
         }
@@ -58,6 +62,7 @@ class StreamRecorder {
                 this.record(this.syncNAL);
             }
             console.log(`Started new recording as ${current}`);
+            this.prune();
         } else {
             console.log('Stopped recording');
         }
@@ -72,6 +77,16 @@ class StreamRecorder {
             let save = path.join(this.cameraDir, ts + '.264');
             fs.renameSync(current, save);
             console.log(`Saved current recording as ${save}`);
+        }
+    }
+
+    prune() {
+        let files = fs.readdirSync(this.cameraDir);
+        files.sort((a, b) => a > b ? -1 : (a < b ? 1 : 0));
+        // console.log(`recordings=${files}`);
+        for (let i = maxChunks; i < files.length; i++) {
+            console.log(`Removing ${files[i]}`);
+            fs.unlinkSync(path.join(this.cameraDir, files[i]));
         }
     }
 
