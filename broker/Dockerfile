@@ -1,4 +1,5 @@
-FROM node:12.18.1
+FROM node:alpine
+RUN apk add --no-cache ffmpeg
 
 ENV NODE_ENV=production
 
