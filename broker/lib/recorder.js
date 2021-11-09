@@ -137,6 +137,17 @@ class StreamRecorder {
         let ffmpeg = spawn.spawnSync('ffmpeg', ['-i', '-', '-frames:v', '4', '-f', 'image2', '-'], { input: video} );
         return ffmpeg.stdout;
     }
+
+    getRecordings() {
+        let files = fs.readdirSync(this.cameraDir);
+        files.sort((a, b) => a > b ? -1 : (a < b ? 1 : 0));
+        return files;
+    }
+
+    getRecordingPath(name) {
+        return path.join(this.cameraDir, name);
+    }
+
 }
 
 module.exports = StreamRecorder

@@ -41,6 +41,18 @@ const getCamera = function (req, res) {
     }
 }
 
+const getCameraRecordings = function (req, res) {
+    console.debug(`Getting ${req.params.camera} recordings`);
+    let camera = cameras.get(req.params.camera);
+    let recordings = camera.recorder.getRecordings();
+    res.status(200).send(JSON.stringify({'recordings' : recordings}));
+}
+
+const getCameraRecording = function (req, res) {
+    console.debug(`Getting ${req.params.camera} recording ${req.params.recording}`);
+    let camera = cameras.get(req.params.camera);
+    res.download(camera.recorder.getRecordingPath(req.params.recording));
+}
 
 const controlCamera = function (req, res) {
     if (checkPermissions(req.params.camera, req, res)) {
@@ -103,6 +115,8 @@ const Init = function(app, appUrl, relay) {
     app.get(url + '/api/cameras', getCameras);
     app.get(url + '/api/viewers', getViewers);
     app.get(url + '/api/:camera', getCamera);
+    app.get(url + '/api/:camera/recordings', getCameraRecordings);
+    app.get(url + '/api/:camera/recordings/:recording', getCameraRecording);
     app.put(url + '/api/:camera', controlCamera);
     app.delete(url + '/api/:camera/:viewer', disconnectCameraViewer);
 }
