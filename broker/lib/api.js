@@ -41,6 +41,12 @@ const getCamera = function (req, res) {
     }
 }
 
+const getCameraSnapshot = function (req, res) {
+    console.debug(`Taking ${req.params.camera} snapshot`);
+    let camera = cameras.get(req.params.camera);
+    res.status(200).contentType('image/png').send(camera.recorder.snapshot());
+}
+
 const getCameraRecordings = function (req, res) {
     console.debug(`Getting ${req.params.camera} recordings`);
     let camera = cameras.get(req.params.camera);
@@ -83,8 +89,6 @@ const controlCamera = function (req, res) {
             camera.recorder.start();
         } else if (cmd === 'stopRecording') {
             camera.recorder.stop();
-        } else if (cmd === 'snap') {
-            res.status(200).contentType('image/png').send(camera.recorder.snapshot());
         }
 
         res.status(200).send();
@@ -115,6 +119,7 @@ const Init = function(app, appUrl, relay) {
     app.get(url + '/api/cameras', getCameras);
     app.get(url + '/api/viewers', getViewers);
     app.get(url + '/api/:camera', getCamera);
+    app.get(url + '/api/:camera/snapshot', getCameraSnapshot);
     app.get(url + '/api/:camera/recordings', getCameraRecordings);
     app.get(url + '/api/:camera/recordings/:recording', getCameraRecording);
     app.put(url + '/api/:camera', controlCamera);
