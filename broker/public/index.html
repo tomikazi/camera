@@ -207,6 +207,8 @@
                     } else {
                         wsavc.ws.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
                     }
+                } else if (e.key === '^' && e.shiftKey) { // shift 6
+                    wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
 
                 } else if (e.key === 'h') {
                     $('#help').css('opacity',  $('#help').css('opacity') === '0' ? 1 : 0);

@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require("path");
+const spawn = require('child_process');
 
 const recordingsDir = '/var/broker/recordings';
 
@@ -16,6 +17,7 @@ class StreamRecorder {
         this.spsNAL = null;
         this.ppsNAL = null;
         this.syncNAL = null;
+        this.lastNAL = null;
 
         if (!fs.existsSync(recordingsDir) || !fs.lstatSync(recordingsDir).isDirectory()) {
             console.log('Recordings directory not found; recording is disabled');
@@ -111,6 +113,8 @@ class StreamRecorder {
                     // console.log("Sync NAL");
                     this.syncNAL = data;
                     readyToRoll = true;
+                } else {
+                    this.lastNAL = data;
                 }
             }
         }
@@ -123,6 +127,15 @@ class StreamRecorder {
                 this.rollover(true);
             }
         }
+    }
+
+    snapshot() {
+        // Create a buffer to hold our SPS, PPS, reference and last frames
+        let video = Buffer.concat([Buffer.from(this.spsNAL), Buffer.from(this.ppsNAL), Buffer.from(this.syncNAL), Buffer.from(this.lastNAL)]);
+
+        // Invoke ffmpeg to convert the video buffer to a PNG and return the data
+        let ffmpeg = spawn.spawnSync('ffmpeg', ['-i', '-', '-frames:v', '4', '-f', 'image2', '-'], { input: video} );
+        return ffmpeg.stdout;
     }
 }
 

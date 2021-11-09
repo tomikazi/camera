@@ -71,6 +71,8 @@ const controlCamera = function (req, res) {
             camera.recorder.start();
         } else if (cmd === 'stopRecording') {
             camera.recorder.stop();
+        } else if (cmd === 'snap') {
+            res.status(200).contentType('image/png').send(camera.recorder.snapshot());
         }
 
         res.status(200).send();

@@ -9,9 +9,12 @@ Other applications can use the following REST API to query and control the remot
 * `GET /camera/api/:camera`
     * returns current camera position and any remote viewers
 * `PUT /camera/api/:camera`
-    * issues command to the specified camera, `autohome`, `moveTo`, `moveBy`
+    * issues command to the specified camera, `autohome`, `moveTo`, `moveBy`, `snap`, `startRecording`, `stopRecording`
     * `moveTo` takes either `pos` set to `12`, `3`, `6`, `-6`, `9` or `pan` and `tilt` coordinates
     * `moveBy` takes `pan` and `tilt` steps relative to current position
+    * `autohome` triggers the automatic homing sequence to establish the bounding box and to position the camera to 0, 0; level and forward
+    * `snap` takes a snapshot and returns PNG image data
+    * `startRecording`/`stopRecording` starts/stops recording of video to disc
 * `DELETE /camera/api/:camera/:viewerIP`
     * disconnects all viewers from the specified IP address on the given camera; this can be used
       after revoking a token
