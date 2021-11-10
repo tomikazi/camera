@@ -42,22 +42,28 @@ const getCamera = function (req, res) {
 }
 
 const getCameraSnapshot = function (req, res) {
-    console.debug(`Taking ${req.params.camera} snapshot`);
-    let camera = cameras.get(req.params.camera);
-    res.status(200).contentType('image/png').send(camera.recorder.snapshot());
+    if (checkPermissions(req.params.camera, req, res)) {
+        console.debug(`Taking ${req.params.camera} snapshot`);
+        let camera = cameras.get(req.params.camera);
+        res.status(200).contentType('image/png').send(camera.recorder.snapshot());
+    }
 }
 
 const getCameraRecordings = function (req, res) {
-    console.debug(`Getting ${req.params.camera} recordings`);
-    let camera = cameras.get(req.params.camera);
-    let recordings = camera.recorder.getRecordings();
-    res.status(200).send(JSON.stringify({'recordings' : recordings}));
+    if (checkPermissions(req.params.camera, req, res)) {
+        console.debug(`Getting ${req.params.camera} recordings`);
+        let camera = cameras.get(req.params.camera);
+        let recordings = camera.recorder.getRecordings();
+        res.status(200).send(JSON.stringify({'recordings': recordings}));
+    }
 }
 
 const getCameraRecording = function (req, res) {
-    console.debug(`Getting ${req.params.camera} recording ${req.params.recording}`);
-    let camera = cameras.get(req.params.camera);
-    res.download(camera.recorder.getRecordingPath(req.params.recording));
+    if (checkPermissions(req.params.camera, req, res)) {
+        console.debug(`Getting ${req.params.camera} recording ${req.params.recording}`);
+        let camera = cameras.get(req.params.camera);
+        res.download(camera.recorder.getRecordingPath(req.params.recording));
+    }
 }
 
 const controlCamera = function (req, res) {
