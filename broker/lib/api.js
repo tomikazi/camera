@@ -85,7 +85,11 @@ const controlCamera = function (req, res) {
             } else if (pos === '-6') {
                 camera.socket.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
             } else if (!pos) {
-                camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": false}');
+                let msg = '{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', ' +
+                '"panDelay": ' + (req.body.panDelay ? req.body.panDelay : 1) + ', ' +
+                '"tiltDelay": ' + (req.body.tiltDelay ? req.body.tiltDelay : 1) + ', ' +
+                    '"relative": false}';
+                camera.socket.send(msg);
             }
         } else if (cmd === 'moveBy') {
             camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": true}');

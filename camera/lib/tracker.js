@@ -67,8 +67,8 @@ class Tracker {
                     this.tilt.move(tv, d.slow ? 6 : 1, cb);
                 }
             } else {
-                this.pan.move_to(d.pan, 1, cb);
-                this.tilt.move_to(d.tilt, 1, cb);
+                this.pan.move_to(d.pan, d.panDelay ? d.panDelay : 1, cb);
+                this.tilt.move_to(d.tilt, d.tiltDelay ? d.tiltDelay : 1, cb);
             }
         }
     }

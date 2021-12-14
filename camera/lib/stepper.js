@@ -88,7 +88,11 @@ class Motor {
                     .then(steps => {
                         this.pos = this.pos + (steps * (bySteps < 0 ? -1 : +1));
                         if (cb) {
-                            cb({name: this.name, pos: this.pos});
+                            try {
+                                cb({name: this.name, pos: this.pos});
+                            } catch {
+                                console.warn(`${this.name} move callback failed`);
+                            }
                         }
                         this.moving = false;
                     });
