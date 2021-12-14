@@ -222,23 +222,19 @@
                 $('.menu').css('display', !collapsed ? 'block' : 'none');
                 $('.status').css('display', !collapsed ? 'block' : 'none');
                 $('#view').css('display', !collapsed ? 'block' : 'none');
+                $('#station').css('display', !collapsed ? 'block' : 'none');
+                $('#track').css('display', !collapsed ? 'block' : 'none');
                 $('#' + topic).css('display', 'block');
             }
 
             function pick(topic, e) {
-                let cmd = e.target.id;
-                if (cmd === 'clock0') {
-                    wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock9') {
-                    wsavc.ws.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock3') {
-                    wsavc.ws.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock6') {
-                    wsavc.ws.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock-6') {
-                    wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'autohome') {
-                    startHome();
+                let cmd = e.target.id.split("_");
+                if (cmd[0] === 'view') {
+                    wsavc.ws.send(`{"train": "view", "loc": "${cmd[1]}"}`);
+                } else if (cmd[0] === 'station') {
+                    wsavc.ws.send(`{"train": "station", "loc": "${cmd[1]}"}`);
+                } else if (cmd[0] === 'track') {
+                    wsavc.ws.send(`{"train": "track", "track": "${cmd[1]}"}`);
                 }
                 menu(topic);
             }
@@ -249,6 +245,11 @@
             $('.view.item').click(function(e) { pick('view', e)});
             $('#view').click(function() { menu('view')});
 
+            $('.station.item').click(function(e) { pick('station', e)});
+            $('#station').click(function() { menu('station')});
+
+            $('.track.item').click(function(e) { pick('track', e)});
+            $('#track').click(function() { menu('track')});
 
             // Touch and mouse events
             let tracking = false;
@@ -340,7 +341,7 @@
             } else {
                 $('#motion_status').css('display', 'none');
                 $('#reload').css('display', 'none');
-                $('.menu').css('display', 'none');
+                // $('.menu').css('display', 'none');
                 $('#positioncontainer').css('top', 600);
 
                 // Unless embedded, center the view-port on the page.
@@ -446,7 +447,7 @@
             padding: 0px;
             width: 64px;
             height: 64px;
-            top: 200px;
+            top: 420px;
             background-image: url('lock.png');
             background-repeat: no-repeat;
             background-position-y: 4px;
@@ -455,6 +456,24 @@
         #motion_status {
             top: 10px;
             left: 0px;
+        }
+
+        #station {
+            top: 180px;
+            background-image: url('station.png');
+        }
+        #stations {
+            display: none;
+            top: 180px;
+        }
+
+        #track {
+            top: 250px;
+            background-image: url('track.png');
+        }
+        #tracks {
+            display: none;
+            top: 250px;
         }
 
         #view {
@@ -512,13 +531,27 @@
 
         <div class="overlay ui menu" id="view"></div>
         <div class="overlay choices" id="views">
-            <div class="view item" id="clock0">Forward</div>
-            <div class="view item" id="clock9">Left</div>
-            <div class="view item" id="clock3">Right</div>
-            <div class="view item" id="clock-6">Backward (CW)</div>
-            <div class="view item" id="clock6">Backward (CCW)</div>
-            <p><hr></p>
-            <div class="view item" id="autohome">Auto Home</div>
+            <div class="view item" id="view_track1">Track 1</div>
+            <div class="view item" id="view_track2">Track 2</div>
+            <div class="view item" id="view_meadow">Meadow</div>
+            <div class="view item" id="view_coast">Coast</div>
+            <div class="view item" id="view_forest">Forest</div>
+            <div class="view item" id="view_tree">Tree</div>
+        </div>
+
+        <div class="overlay ui menu" id="track"></div>
+        <div class="overlay choices" id="tracks">
+            <div class="track item" id="track_track1">Track 1</div>
+            <div class="track item" id="track_track2">Track 2</div>
+            <div class="track item" id="track_meadow">Meadow</div>
+        </div>
+
+        <div class="overlay ui menu" id="station"></div>
+        <div class="overlay choices" id="stations">
+            <div class="station item" id="station_track1">Track 1</div>
+            <div class="station item" id="station_track2">Track 2</div>
+            <div class="station item" id="station_meadow">Meadow</div>
+            <div class="station item" id="station_forest">Forest</div>
         </div>
     </div>
 

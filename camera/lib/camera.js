@@ -4,8 +4,9 @@ const WebSocket = require('ws');
 const Splitter = require('stream-split');
 const merge = require('mout/object/merge');
 const Tracker = require('./tracker');
-const util = require('util');
 const spawn = require('child_process').spawn;
+
+const TrainApp = require('./train_app');
 
 const NALseparator = new Buffer([0, 0, 0, 1]);//NAL break
 
@@ -23,10 +24,11 @@ class Camera {
         this.isConnected = false;
         this.streamer = null;
 
+        this.tracker = new Tracker();
+        this.trainApp = new TrainApp(this.tracker);
+
         this.leds = this.create_light();
         this.light(true);
-
-        this.tracker = new Tracker();
 
         this.connect = this.connect.bind(this);
         this.onerror = this.onerror.bind(this);
@@ -126,13 +128,20 @@ class Camera {
         }));
 
         this.ws.on('message', function (data) {
-            if (data[0] === '{') {
-                let d = JSON.parse(data);
-                if (d.hasOwnProperty('light')) {
-                    self.light(d.light);
-                } else {
-                    self.process_command(d);
+            try {
+                // console.log('message', data);
+                if (data[0] === '{') {
+                        let d = JSON.parse(data);
+                        if (d.hasOwnProperty('light')) {
+                            self.light(d.light);
+                        } else if (d.hasOwnProperty('train')) {
+                            self.trainApp.process_command(d);
+                        } else {
+                            self.process_command(d);
+                        }
                 }
+            } catch (err) {
+                console.warn('error', err);
             }
         });
 
@@ -152,11 +161,12 @@ class Camera {
     }
 
     light(on) {
-        try {
-            this.leds.write(on ? 'on\r\n' : 'off\r\n');
-        } catch (error) {
-            console.log('LEDS error');
-        }
+        this.trainApp.light(on);
+        // try {
+        //     this.leds.write(on ? 'on\r\n' : 'off\r\n');
+        // } catch (error) {
+        //     console.log('LEDS error', error);
+        // }
     }
 
     stop() {
