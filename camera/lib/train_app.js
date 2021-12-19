@@ -148,7 +148,11 @@ class TrainApp {
     }
 
     set_station(loc) {
-        this.client.publish('train/station', this.process_track(loc));
+        if (loc === 'none') {
+            this.client.publish('train', 'on');
+        } else {
+            this.client.publish('train/station', this.process_track(loc));
+        }
     }
 
     set_track(loc) {
