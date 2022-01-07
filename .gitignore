@@ -1,4 +1,5 @@
 broker/tokens
+camera/lib/secret.js
 
 # Logs
 logs
