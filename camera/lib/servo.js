@@ -7,6 +7,7 @@ class Servo {
     constructor(name, options) {
         this.name = name;
         this.pos = 0;
+        this.home = 0;
         this.min = options.min;
         this.max = options.max;
         this.reverse = options.reverse;
@@ -14,8 +15,6 @@ class Servo {
 
         this.move = this.move.bind(this);
         this.move_to = this.move_to.bind(this);
-
-        this.move_to(options.startPos, 0)
     }
 
     scale(number, inMin, inMax, outMin, outMax) {

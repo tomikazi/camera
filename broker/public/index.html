@@ -187,7 +187,9 @@
                 } else if (e.key === 'ArrowDown') {
                     wsavc.ws.send(`{"pan": 0, "tilt": -${amount}, "relative": true}`);
 
-                } else if (e.key === '5' || e.key === 'Home') {
+                } else if (e.key === 'Home' || e.key === '0') {
+                    wsavc.ws.send('{"pos": "home"}');
+                } else if (e.key === '5') {
                     wsavc.ws.send('{"pos": "F"}');
                 } else if (e.key === '4') {
                     wsavc.ws.send('{"pos": "L"}');
@@ -495,6 +497,7 @@
 
         <div class="overlay ui menu" id="view"></div>
         <div class="overlay choices" id="views">
+            <div class="view item" id="home">Home</div>
             <div class="view item" id="F">Forward</div>
             <div class="view item" id="L">Left</div>
             <div class="view item" id="R">Right</div>
