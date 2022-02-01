@@ -20,5 +20,5 @@ scp -r -P $port -r *.js package.json lib/ $dst:camera
 if [ -z $justData ]; then
   killIt
   trap killIt EXIT
-  ssh -p $port -t $dst "cd camera; sudo node server.js"
+  ssh -p $port -t $dst "cd camera; sudo node client.js --name Roseville --url http://localhost:6000/camera"
 fi

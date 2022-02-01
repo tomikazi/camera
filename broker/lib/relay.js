@@ -39,7 +39,11 @@ class StreamRelay {
         socket.on('message', function (data) {
             if (data[0] === '{') {
                 let d = JSON.parse(data);
-                if (d.action === 'register') {
+                if (d.action === 'probe') {
+                    socket.send(data);
+                    return;
+
+                } else if (d.action === 'register') {
                     name = d.name;
                     console.log(`Camera ${name} registered`);
                     camera.name = name;

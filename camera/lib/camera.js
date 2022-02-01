@@ -3,11 +3,12 @@
 const WebSocket = require('ws');
 const Splitter = require('stream-split');
 const merge = require('mout/object/merge');
-const Tracker = require('./tracker');
-const util = require('util');
+const Tracker = require('./servo_tracker');
 const spawn = require('child_process').spawn;
 
 const NALseparator = new Buffer([0, 0, 0, 1]);//NAL break
+
+const maxProbeDelay = 2000;
 
 class Camera {
 
@@ -22,9 +23,6 @@ class Camera {
         this.url = url;
         this.isConnected = false;
         this.streamer = null;
-
-        this.leds = this.create_light();
-        this.light(true);
 
         this.tracker = new Tracker();
 
@@ -66,18 +64,12 @@ class Camera {
         return this.streamer.stdout;
     }
 
-    create_light() {
-        let leds = spawn('node', ['leds.js'], {stdio: ['pipe', 'ignore', 'ignore']});
-        leds.on('exit', function (code) {
-            if (code)
-                console.log('leds failure', code);
-        });
-        return leds.stdin;
-    }
-
-
     broadcast(data) {
-        this.ws.send(Buffer.concat([NALseparator, data]), {binary: true});
+        if (this.check_lag()) {
+            this.reconnect();
+        } else {
+            this.ws.send(Buffer.concat([NALseparator, data]), {binary: true});
+        }
     }
 
     broadcast_status(data) {
@@ -93,14 +85,25 @@ class Camera {
             this.ws = new WebSocket(this.url);
             this.ws.on('error', this.onerror)
             this.ws.on('open', this.register);
+
+            this.probeIndex = 0;
+            this.probeTime = Date.now() + 500;
+            this.probeAcked = true;
         }
+    }
+
+    reconnect() {
+        console.log('Reconnecting...');
+        if (this.ws) {
+            this.ws.close();
+        }
+        this.connect();
     }
 
     onerror(error) {
         console.log(`${error}`);
         this.isConnected = false;
         this.stop_feed();
-        this.light(false);
     }
 
     register() {
@@ -128,8 +131,8 @@ class Camera {
         this.ws.on('message', function (data) {
             if (data[0] === '{') {
                 let d = JSON.parse(data);
-                if (d.hasOwnProperty('light')) {
-                    self.light(d.light);
+                if (d.action === 'probe') {
+                    self.process_probe(d);
                 } else {
                     self.process_command(d);
                 }
@@ -151,16 +154,39 @@ class Camera {
         this.broadcast_status(d);
     }
 
-    light(on) {
-        try {
-            this.leds.write(on ? 'on\r\n' : 'off\r\n');
-        } catch (error) {
-            console.log('LEDS error');
+    // Mechanism for monitoring that video does not become buffered up and latent
+    check_lag() {
+        // If probe response lags, signal alarm
+        if (Date.now() > this.probeTime + maxProbeDelay) {
+            console.log('Detected network lag!!!');
+            return true;
+        }
+
+        // Otherwise, has the last probe has been acked and is it time to send another?
+        if (this.probeAcked && Date.now() > this.probeTime) {
+            // Then update probe state and send it out.
+            this.probeAcked = false;
+            this.probeIndex++;
+            this.probeTime = Date.now();
+            this.ws.send(JSON.stringify({
+                action: 'probe',
+                index: this.probeIndex,
+                time: this.probeTime
+            }));
+        }
+        return false;
+    }
+
+    process_probe(d) {
+        // Does the probe index matches our pending probe index?
+        if (d.index === this.probeIndex) {
+            // Id so, mark the probe as acked and schedule next one
+            this.probeTime = Date.now() + 500;
+            this.probeAcked = true;
         }
     }
 
     stop() {
-        this.light(false);
         this.tracker.stop();
         if (this.ws) {
             this.ws.close();

@@ -4,7 +4,7 @@
     <link rel="apple-touch-icon" href="app.png">
     <meta name="viewport" content="width=1280, initial-scale=0.66, maximum-scale=1, user-scalable=no"/>
 
-    <title>Pan &amp Tilt Camera</title>
+    <title>Pan/Tilt Camera</title>
 
     <script type="text/javascript" src="//code.jquery.com/jquery-1.12.4.min.js"></script>
     <script type="text/javascript" src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -21,8 +21,8 @@
                 zerosSent = false;
 
             var pan = 0, tilt = 0,
-                panMin = -100 * 16, panMax = 100 * 16,
-                tiltMin = -30 * 16, tiltMax = 30 * 16;
+                panMin = -90, panMax = 90,
+                tiltMin = -30, tiltMax = 35;
 
             let port = location.port ? parseInt(location.port) : (location.protocol === 'https:' ? 443 : 80);
             let protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -31,7 +31,7 @@
 
             cameraName = params.get('id');
             console.log(`Connecting to ${cameraName}`);
-            document.title = cameraName + ' - Pan &amp Tilt Camera';
+            document.title = cameraName + ' - Pan/Tilt Camera';
 
             connect();
             setInterval(connect, 5000);
@@ -82,7 +82,7 @@
                     }
                     px = map(pan, panMin, panMax, 0, 305);
                     py = map(-tilt, tiltMin, tiltMax, 0, 75);
-                    $('#position').css('left', px).css('top', py);
+                    $('#position').css('left', px).css('top', py + 6);
                     showUIOverlay();
                 }
             }
@@ -137,8 +137,8 @@
                 if (orient) {
                     let tilt = e.rotationRate.beta * (orient < 0 ? +1 : -1),
                         pan = e.rotationRate.alpha * (orient < 0 ? -1 : +1),
-                        tv = Math.abs(tilt) > 0.25 ? tilt.toFixed(2)/4 : 0.0,
-                        pv = Math.abs(pan) > 0.25 ? pan.toFixed(2)/4 : 0.0
+                        tv = Math.abs(tilt) > 0.25 ? tilt.toFixed(2)/64 : 0.0,
+                        pv = Math.abs(pan) > 0.25 ? pan.toFixed(2)/64 : 0.0
 
                     if (connected && controlling) {
                         if (tv && pv || !zerosSent) {
@@ -176,7 +176,7 @@
             }
 
             function keyHandler(e) {
-                let speed = e.shiftKey ? 4 : 96;
+                let speed = e.shiftKey ? 1 : 5;
                 if (e.ctrlKey) {
                     if (e.key === 'q') {
                         wsavc.ws.send('{"cmd": "enable", "on": false}');
@@ -198,17 +198,9 @@
                 } else if (e.key === '0' || e.key === 'Home') {
                     wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
                 } else if (e.key === '3') {
-                    wsavc.ws.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
+                    wsavc.ws.send('{"pan": -90.0, "tilt": 0.0, "relative": false}');
                 } else if (e.key === '9') {
-                    wsavc.ws.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
-                } else if (e.key === '6') {
-                    if (e.shiftKey) {
-                        wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
-                    } else {
-                        wsavc.ws.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
-                    }
-                } else if (e.key === '^' && e.shiftKey) { // shift 6
-                    wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
+                    wsavc.ws.send('{"pan": 90.0, "tilt": 0.0, "relative": false}');
 
                 } else if (e.key === 'h') {
                     $('#help').css('opacity',  $('#help').css('opacity') === '0' ? 1 : 0);
@@ -230,15 +222,9 @@
                 if (cmd === 'clock0') {
                     wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
                 } else if (cmd === 'clock9') {
-                    wsavc.ws.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
+                    wsavc.ws.send('{"pan": -90.0, "tilt": 0.0, "relative": false}');
                 } else if (cmd === 'clock3') {
-                    wsavc.ws.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock6') {
-                    wsavc.ws.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock-6') {
-                    wsavc.ws.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'autohome') {
-                    startHome();
+                    wsavc.ws.send('{"pan": 90.0, "tilt": 0.0, "relative": false}');
                 }
                 menu(topic);
             }
@@ -303,10 +289,10 @@
 
             function cMove(p, t) {
                 if (tracking) {
-                    let pv = p - lp;
-                    let tv = t - lt;
+                    let pv = (p - lp)/4;
+                    let tv = (t - lt)/4;
                     if (pv || tv) {
-                        // console.log(`pv=${pv}; tv=${tv}`, e);
+                        console.log(`pv=${pv}; tv=${tv}`);
                         wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true, "slow": false}');
                         lp = p;
                         lt = t;
@@ -515,10 +501,6 @@
             <div class="view item" id="clock0">Forward</div>
             <div class="view item" id="clock9">Left</div>
             <div class="view item" id="clock3">Right</div>
-            <div class="view item" id="clock-6">Backward (CW)</div>
-            <div class="view item" id="clock6">Backward (CCW)</div>
-            <p><hr></p>
-            <div class="view item" id="autohome">Auto Home</div>
         </div>
     </div>
 

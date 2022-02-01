@@ -12,7 +12,7 @@ const camera = new Camera(name, url);
 function halt() {
     console.log('Received halt request');
     camera.stop();
-    setTimeout(process.exit, 3000);
+    setTimeout(process.exit, 1000);
 }
 
 process.on('SIGTERM', halt);
