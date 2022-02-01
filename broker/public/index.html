@@ -128,10 +128,6 @@
                 window.location = window.location;
             }
 
-            function startHome() {
-                wsavc.ws.send('{"cmd": "home"}');
-            }
-
             function deviceMotion(e) {
                 let orient = window.orientation;
                 if (orient) {
@@ -142,7 +138,7 @@
 
                     if (connected && controlling) {
                         if (tv && pv || !zerosSent) {
-                            wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true, "slow": false}');
+                            wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true}');
                             zerosSent = !tv && !pv;
                         }
                     }
@@ -176,31 +172,39 @@
             }
 
             function keyHandler(e) {
-                let speed = e.shiftKey ? 1 : 5;
+                let amount = e.shiftKey ? 1 : 5;
                 if (e.ctrlKey) {
-                    if (e.key === 'q') {
-                        wsavc.ws.send('{"cmd": "enable", "on": false}');
-                    } else if (e.key === 'e') {
-                        wsavc.ws.send('{"cmd": "enable", "on": true}');
-                    } else if (e.key === 'Home' || e.key === 'h') {
-                        startHome();
+                    if (e.key === 'Home' || e.key === 'h') {
+                        wsavc.ws.send('{"cmd": "setHome"}');
                     }
 
                 } else if (e.key === 'ArrowLeft') {
-                    wsavc.ws.send('{"pan": ' + +speed + ', "tilt": 0, "relative": true, "slow": true}');
+                    wsavc.ws.send(`{"pan": ${amount}, "tilt": 0, "relative": true}`);
                 } else if (e.key === 'ArrowRight') {
-                    wsavc.ws.send('{"pan": ' + -speed + ', "tilt": 0, "relative": true, "slow": true}');
+                    wsavc.ws.send(`{"pan": -${amount}, "tilt": 0, "relative": true}`);
                 } else if (e.key === 'ArrowUp') {
-                    wsavc.ws.send('{"pan": 0, "tilt": ' + +speed + ', "relative": true, "slow": true}');
+                    wsavc.ws.send(`{"pan": 0, "tilt": ${amount}, "relative": true}`);
                 } else if (e.key === 'ArrowDown') {
-                    wsavc.ws.send('{"pan": 0, "tilt": ' + -speed + ', "relative": true, "slow": true}');
+                    wsavc.ws.send(`{"pan": 0, "tilt": -${amount}, "relative": true}`);
 
-                } else if (e.key === '0' || e.key === 'Home') {
-                    wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
-                } else if (e.key === '3') {
-                    wsavc.ws.send('{"pan": -90.0, "tilt": 0.0, "relative": false}');
+                } else if (e.key === '5' || e.key === 'Home') {
+                    wsavc.ws.send('{"pos": "F"}');
+                } else if (e.key === '4') {
+                    wsavc.ws.send('{"pos": "L"}');
+                } else if (e.key === '6') {
+                    wsavc.ws.send('{"pos": "R"}');
+                } else if (e.key === '8') {
+                    wsavc.ws.send('{"pos": "U"}');
+                } else if (e.key === '2') {
+                    wsavc.ws.send('{"pos": "D"}');
+                } else if (e.key === '7') {
+                    wsavc.ws.send('{"pos": "LU"}');
+                } else if (e.key === '1') {
+                    wsavc.ws.send('{"pos": "LD"}');
                 } else if (e.key === '9') {
-                    wsavc.ws.send('{"pan": 90.0, "tilt": 0.0, "relative": false}');
+                    wsavc.ws.send('{"pos": "RU"}');
+                } else if (e.key === '3') {
+                    wsavc.ws.send('{"pos": "RD"}');
 
                 } else if (e.key === 'h') {
                     $('#help').css('opacity',  $('#help').css('opacity') === '0' ? 1 : 0);
@@ -218,14 +222,7 @@
             }
 
             function pick(topic, e) {
-                let cmd = e.target.id;
-                if (cmd === 'clock0') {
-                    wsavc.ws.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock9') {
-                    wsavc.ws.send('{"pan": -90.0, "tilt": 0.0, "relative": false}');
-                } else if (cmd === 'clock3') {
-                    wsavc.ws.send('{"pan": 90.0, "tilt": 0.0, "relative": false}');
-                }
+                wsavc.ws.send(`{"pos": "${e.target.id}"}`);
                 menu(topic);
             }
 
@@ -293,7 +290,7 @@
                     let tv = (t - lt)/4;
                     if (pv || tv) {
                         console.log(`pv=${pv}; tv=${tv}`);
-                        wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true, "slow": false}');
+                        wsavc.ws.send('{"pan": ' + pv + ', "tilt": ' + tv + ', "relative": true}');
                         lp = p;
                         lt = t;
                     }
@@ -498,9 +495,9 @@
 
         <div class="overlay ui menu" id="view"></div>
         <div class="overlay choices" id="views">
-            <div class="view item" id="clock0">Forward</div>
-            <div class="view item" id="clock9">Left</div>
-            <div class="view item" id="clock3">Right</div>
+            <div class="view item" id="F">Forward</div>
+            <div class="view item" id="L">Left</div>
+            <div class="view item" id="R">Right</div>
         </div>
     </div>
 

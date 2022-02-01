@@ -74,27 +74,15 @@ const controlCamera = function (req, res) {
 
         if (cmd === 'moveTo') {
             let pos = req.body.pos;
-            if (pos === '12') {
-                camera.socket.send('{"pan": 0.0, "tilt": 0.0, "relative": false}');
-            } else if (pos === '9') {
-                camera.socket.send('{"pan": 800.0, "tilt": 0.0, "relative": false}');
-            } else if (pos === '3') {
-                camera.socket.send('{"pan": -800.0, "tilt": 0.0, "relative": false}');
-            } else if (pos === '6') {
-                camera.socket.send('{"pan": 1600.0, "tilt": 0.0, "relative": false}');
-            } else if (pos === '-6') {
-                camera.socket.send('{"pan": -1600.0, "tilt": 0.0, "relative": false}');
+            if (pos) {
+                camera.socket.send(`{"pos": "${req.body.pos}"}`);
             } else if (!pos) {
                 let msg = '{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', ' +
-                '"panDelay": ' + (req.body.panDelay ? req.body.panDelay : 1) + ', ' +
-                '"tiltDelay": ' + (req.body.tiltDelay ? req.body.tiltDelay : 1) + ', ' +
-                    '"relative": false}';
+                            '"duration": ' + (req.body.duration || 1) + ', ' + '"relative": false}';
                 camera.socket.send(msg);
             }
         } else if (cmd === 'moveBy') {
             camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": true}');
-        } else if (cmd === 'autohome') {
-            camera.socket.send('{"cmd": "home"}');
         } else if (cmd === 'startRecording') {
             camera.recorder.start();
         } else if (cmd === 'stopRecording') {

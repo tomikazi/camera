@@ -50,6 +50,7 @@ class StreamRelay {
                     camera.recorder = new StreamRecorder(name);
                     self.cameras.set(name, camera);
                     self.update_camera_light(name);
+
                 } else if (d.action === 'status') {
                     if (d.data.name === 'Pan') {
                         camera.pos.pan = d.data.pos;

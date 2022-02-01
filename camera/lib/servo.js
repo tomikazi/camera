@@ -6,6 +6,7 @@ class Servo {
 
     constructor(name, options) {
         this.name = name;
+        this.pos = 0;
         this.min = options.min;
         this.max = options.max;
         this.reverse = options.reverse;
@@ -25,11 +26,10 @@ class Servo {
         return Math.round(this.scale(pos, -90, +90, 500, 2500));
     }
 
-    move_to(pos, delay, cb) {
+    move_to(pos, duration, cb) {        // duration is unused at the moment
         if (this.min <= pos && pos <= this.max) {
             this.pos = pos;
             this.pw = this.pulseWidth(this.pos);
-            // console.log(`${this.name} pos ${pos}; PW ${this.pw}`)
             this.gpio.servoWrite(this.pw);
             try {
                 cb({name: this.name, pos: (this.reverse ? -1 : +1) * this.pos});
@@ -41,10 +41,9 @@ class Servo {
         }
     }
 
-    move(by, delay, cb) {
+    move(by, duration, cb) {
         if (by) {
-            // console.log(`${this.name} move by ${by}`);
-            this.move_to(this.pos + by, delay, cb);
+            this.move_to(this.pos + by, duration, cb);
         }
     }
 }
