@@ -12,7 +12,7 @@ const maxProbeDelay = 2000;
 
 class Camera {
 
-    constructor(name, url, options) {
+    constructor(name, url, noVideo, options) {
         this.options = merge({
             width: 1280,
             height: 720,
@@ -21,6 +21,7 @@ class Camera {
 
         this.name = name;
         this.url = url;
+        this.noVideo = noVideo;
         this.isConnected = false;
         this.streamer = null;
 
@@ -38,7 +39,7 @@ class Camera {
     }
 
     start_feed() {
-        if (!this.readStream) {
+        if (!this.noVideo && !this.readStream) {
             this.readStream = this.get_camera_feed();
             this.readStream = this.readStream.pipe(new Splitter(NALseparator));
             this.readStream.on('data', this.broadcast);
@@ -46,12 +47,14 @@ class Camera {
     }
 
     stop_feed() {
-        if (this.streamer) {
-            this.streamer.kill(9);
-        }
-        this.streamer = null;
+        if (!this.noVideo) {
+            if (this.streamer) {
+                this.streamer.kill(9);
+            }
+            this.streamer = null;
 
-        spawn('killall', ['raspivid']);
+            spawn('killall', ['raspivid']);
+        }
         this.readStream = null;
     }
 
