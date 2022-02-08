@@ -73,16 +73,16 @@ const controlCamera = function (req, res) {
         let cmd = req.body.cmd;
 
         if (cmd === 'moveTo') {
-            let pos = req.body.pos;
+            let pos = req.body.pos,
+                duration = req.body.duration || 0,
+                ease = req.body.ease || 'quad';
             if (pos) {
-                camera.socket.send(`{"pos": "${req.body.pos}"}`);
+                camera.socket.send(`{"pos": "${pos}", "duration": ${duration}, "ease": "${ease}"}`);
             } else if (!pos) {
-                let msg = '{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', ' +
-                            '"duration": ' + (req.body.duration || 1) + ', ' + '"relative": false}';
-                camera.socket.send(msg);
+                camera.socket.send(`{"pan": ${req.body.pan}, "tilt": ${req.body.tilt}, "duration": ${duration}, "relative": false, "ease": "${ease}"}`);
             }
         } else if (cmd === 'moveBy') {
-            camera.socket.send('{"pan": ' + req.body.pan + ', "tilt": ' + req.body.tilt + ', "relative": true}');
+            camera.socket.send(`{"pan": ${req.body.pan}, "tilt": ${req.body.tilt}, "relative": true}`);
         } else if (cmd === 'startRecording') {
             camera.recorder.start();
         } else if (cmd === 'stopRecording') {

@@ -6,6 +6,20 @@ const Servo = require('./servo');
 
 const homePosFile = 'homePos';
 
+function easeLinear (t, b, c, d) {
+    return c * t / d + b;
+}
+
+function easeInOutQuad (t, b, c, d) {
+    if ((t /= d / 2) < 1) return c / 2 * t * t + b;
+    return -c / 2 * ((--t) * (t - 2) - 1) + b;
+}
+
+function easeInOutCubic (t, b, c, d) {
+    if ((t /= d / 2) < 1) return c / 2 * t * t * t + b;
+    return c / 2 * ((t -= 2) * t * t + 2) + b;
+}
+
 
 class Tracker {
 
@@ -19,29 +33,30 @@ class Tracker {
 
     pan_tilt(d, cb) {
         let duration = d.duration || 0;
+        let ease = d.ease === 'linear' ? easeLinear : (d.ease === 'cubic' ? easeInOutCubic : easeInOutQuad);
 
         if (d.cmd === 'setHome') {
             this.setHomePos();
         } else if (d.pos === 'home') {
-            this.move_to(this.pan.home, this.tilt.home, duration, cb);
+            this.move_to(this.pan.home, this.tilt.home, duration, cb, ease);
         } else if (d.pos === 'F') {
-            this.move_to(0, 0, duration, cb);
+            this.move_to(0, 0, duration, cb, ease);
         } else if (d.pos === 'L') {
-            this.move_to(this.pan.max, 0, duration, cb);
+            this.move_to(this.pan.max, 0, duration, cb, ease);
         } else if (d.pos === 'R') {
-            this.move_to(this.pan.min, 0, duration, cb);
+            this.move_to(this.pan.min, 0, duration, cb, ease);
         } else if (d.pos === 'U') {
-            this.move_to(0, this.tilt.max, duration, cb);
+            this.move_to(0, this.tilt.max, duration, cb, ease);
         } else if (d.pos === 'D') {
-            this.move_to(0, this.tilt.min, duration, cb);
+            this.move_to(0, this.tilt.min, duration, cb, ease);
         } else if (d.pos === 'UL' || d.pos === 'LU') {
-            this.move_to(this.pan.max, this.tilt.max, duration, cb);
+            this.move_to(this.pan.max, this.tilt.max, duration, cb, ease);
         } else if (d.pos === 'DL' || d.pos === 'LD') {
-            this.move_to(this.pan.max, this.tilt.min, duration, cb);
+            this.move_to(this.pan.max, this.tilt.min, duration, cb, ease);
         } else if (d.pos === 'UR' || d.pos === 'RU') {
-            this.move_to(this.pan.min, this.tilt.max, duration, cb);
+            this.move_to(this.pan.min, this.tilt.max, duration, cb, ease);
         } else if (d.pos === 'DR' || d.pos === 'RD') {
-            this.move_to(this.pan.min, this.tilt.min, duration, cb);
+            this.move_to(this.pan.min, this.tilt.min, duration, cb, ease);
         } else if (!d.pos) {
             if (d.relative) {
                 let pv = Math.round(d.pan),
@@ -54,14 +69,14 @@ class Tracker {
                     this.tilt.move(tv, duration, cb);
                 }
             } else {
-                this.move_to(d.pan, d.tilt, duration, cb);
+                this.move_to(d.pan, d.tilt, duration, cb, ease);
             }
         }
     }
 
-    move_to(pan, tilt, duration, cb) {
-        this.pan.move_to(pan, duration, cb);
-        this.tilt.move_to(tilt, duration, cb);
+    move_to(pan, tilt, duration, cb, ease) {
+        this.pan.move_to(pan, duration, cb, ease);
+        this.tilt.move_to(tilt, duration, cb, ease);
     }
 
     pos() {
