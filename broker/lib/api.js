@@ -83,6 +83,8 @@ const controlCamera = function (req, res) {
             }
         } else if (cmd === 'moveBy') {
             camera.socket.send(`{"pan": ${req.body.pan}, "tilt": ${req.body.tilt}, "relative": true}`);
+        } else if (cmd === 'setHome') {
+            camera.socket.send(`{"cmd": "setHome"}`);
         } else if (cmd === 'startRecording') {
             camera.recorder.start();
         } else if (cmd === 'stopRecording') {

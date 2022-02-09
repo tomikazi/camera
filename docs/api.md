@@ -15,10 +15,12 @@ Other applications can use the following REST API to query and control the remot
 * `GET /camera/api/:camera/recordings/:recording`
     * returns the specified recording as raw H.264 file
 * `PUT /camera/api/:camera`
-    * issues command to the specified camera, `autohome`, `moveTo`, `moveBy`, `snap`, `startRecording`, `stopRecording`
-    * `moveTo` takes either `pos` set to `12`, `3`, `6`, `-6`, `9` or `pan` and `tilt` coordinates
+    * issues command to the specified camera, `setHome`, `moveTo`, `moveBy`, `snap`, `startRecording`, `stopRecording`
+    * `moveTo` takes either `pos` set to `home`, `F`, `L`, `R`, `U`, `D`, `UL`, `UR`, `DL`, `DR` or `pan` and `tilt` coordinates
+       * `duration` specifies number of milliseconds for the move to take
+       * `ease` can be set to `linear`, `quad` or `cubic` to for specific easing function; default is `quad`
     * `moveBy` takes `pan` and `tilt` steps relative to current position
-    * `autohome` triggers the automatic homing sequence to establish the bounding box and to position the camera to 0, 0; level and forward
+    * `setHome` records the current position as the default home
     * `startRecording`/`stopRecording` starts/stops recording of video to disc
 * `DELETE /camera/api/:camera/:viewerIP`
     * disconnects all viewers from the specified IP address on the given camera; this can be used
@@ -51,16 +53,16 @@ curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c77
   }
 }
 
-# Pan to 9 o'clock position; tilt level at 0
+# Pan all the way to the right position; tilt level at 0; take 1 second and use cubic easing function to govern the move
 curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pos": "9" }'
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pos": "R", "duration": 1000, "ease": "cubic" }'
 
-# Pan to specific coordinates
+# Pan to specific coordinates in 500ms using default easing function
 curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pan": -1050, "tilt": 200 }'
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveTo", "pan": -50, "tilt": 10, "duration": 500 }'
 
 # Move left (counter-clockwise) and upward relative to the current orientation
 curl -H 'Content-type: application/json' -H 'token: 340d1b94-9bd4-893f-49ef-4c772132ce06' \
-    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveBy", "pan": 100, "tilt": 20 }'
+    -X PUT http://broker.local:5000/camera/api/FrontYard -d '{ "cmd": "moveBy", "pan": -30, "tilt": 20 }'
 
 ```

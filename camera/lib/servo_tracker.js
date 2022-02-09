@@ -26,7 +26,7 @@ class Tracker {
     constructor() {
         // Create pan and tilt servos
         this.pan = new Servo('Pan', {pin: 18, reverse: true, min: -90, max: +90});
-        this.tilt = new Servo('Tilt', {pin: 19, reverse: false, min: -30, max: +35});
+        this.tilt = new Servo('Tilt', {pin: 19, reverse: false, min: -30, max: +15});
         this.loadHomePos();
         this.move_to(this.pan.home, this.tilt.home, 0);
     }
