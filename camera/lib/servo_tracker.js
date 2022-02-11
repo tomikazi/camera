@@ -1,10 +1,7 @@
 "use strict";
 
-const fs = require('fs');
-
 const Servo = require('./servo');
-
-const homePosFile = 'homePos';
+const Positions = require('./positions');
 
 function easeLinear (t, b, c, d) {
     return c * t / d + b;
@@ -20,15 +17,13 @@ function easeInOutCubic (t, b, c, d) {
     return c / 2 * ((t -= 2) * t * t + 2) + b;
 }
 
-
 class Tracker {
 
     constructor() {
-        // Create pan and tilt servos
         this.pan = new Servo('Pan', {pin: 18, reverse: true, min: -90, max: +90});
         this.tilt = new Servo('Tilt', {pin: 19, reverse: false, min: -30, max: +15});
-        this.loadHomePos();
-        this.move_to(this.pan.home, this.tilt.home, 0);
+        this.positions = new Positions();
+        this.move_to_position(d.pos, 1000);
     }
 
     pan_tilt(d, cb) {
@@ -36,9 +31,9 @@ class Tracker {
         let ease = d.ease === 'linear' ? easeLinear : (d.ease === 'cubic' ? easeInOutCubic : easeInOutQuad);
 
         if (d.cmd === 'setHome') {
-            this.setHomePos();
-        } else if (d.pos === 'home') {
-            this.move_to(this.pan.home, this.tilt.home, duration, cb, ease);
+            this.set_position('home');
+        } else if (d.cmd === 'setPos') {
+            this.set_position(d.name);
         } else if (d.pos === 'F') {
             this.move_to(0, 0, duration, cb, ease);
         } else if (d.pos === 'L') {
@@ -57,6 +52,8 @@ class Tracker {
             this.move_to(this.pan.min, this.tilt.max, duration, cb, ease);
         } else if (d.pos === 'DR' || d.pos === 'RD') {
             this.move_to(this.pan.min, this.tilt.min, duration, cb, ease);
+        } else if (d.pos) {
+            this.move_to_position(d.pos, duration, cb, ease);
         } else if (!d.pos) {
             if (d.relative) {
                 let pv = Math.round(d.pan),
@@ -74,33 +71,24 @@ class Tracker {
         }
     }
 
+    pos() {
+        return {pan: this.pan.pos, tilt: this.tilt.pos};
+    }
+
     move_to(pan, tilt, duration, cb, ease) {
         this.pan.move_to(pan, duration, cb, ease);
         this.tilt.move_to(tilt, duration, cb, ease);
     }
 
-    pos() {
-        return {pan: this.pan.pos, tilt: this.tilt.pos};
-    }
-
-    setHomePos() {
-        console.log(`Setting home position to ${this.pan.home},${this.tilt.home}`);
-        this.pan.home = this.pan.pos;
-        this.tilt.home = this.tilt.pos;
-        fs.writeFileSync(homePosFile, `${this.pan.home},${this.tilt.home}\n`);
-    }
-
-    loadHomePos() {
-        if (fs.existsSync(homePosFile)) {
-            let data = fs.readFileSync(homePosFile);
-            if (data) {
-                let pos = data.toString().split(',');
-                if (pos.length === 2) {
-                    this.pan.home = parseInt(pos[0], 10);
-                    this.tilt.home = parseInt(pos[1], 10);
-                }
-            }
+    move_to_position(name, duration, cb, ease) {
+        let pos = this.positions.get(name);
+        if (pos) {
+            this.move_to(pos.pan, pos.tilt, duration, cb, ease);
         }
+    }
+
+    set_position(name) {
+        this.positions.set(name, this.pan.pos, this.tilt.pos);
     }
 
     stop() {
