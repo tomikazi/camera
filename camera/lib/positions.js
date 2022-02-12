@@ -12,8 +12,7 @@ class Positions {
     set(name, pan, tilt) {
         console.log(`Setting ${name} position to ${pan},${tilt}`);
         this.points[name] = {pan: pan, tilt: tilt, name: name};
-        const data = JSON.stringify(Object.fromEntries(this.points));
-        fs.writeFileSync(positionsFile, data);
+        fs.writeFileSync(positionsFile, JSON.stringify(this.points));
     }
 
     get(name) {
@@ -22,10 +21,9 @@ class Positions {
 
     load() {
         if (fs.existsSync(positionsFile)) {
-            const data = JSON.parse(fs.readFileSync(positionsFile).toString());
-            this.points = new Map(Object.entries(data));
+            this.points = JSON.parse(fs.readFileSync(positionsFile).toString());
         } else {
-            this.points = new Map();
+            this.points = {};
         }
     }
 

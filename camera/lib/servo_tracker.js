@@ -23,7 +23,7 @@ class Tracker {
         this.pan = new Servo('Pan', {pin: 18, reverse: true, min: -90, max: +90});
         this.tilt = new Servo('Tilt', {pin: 19, reverse: false, min: -30, max: +15});
         this.positions = new Positions();
-        this.move_to_position(d.pos, 1000);
+        this.move_to_position('home', 1000, null, easeInOutQuad);
     }
 
     pan_tilt(d, cb) {
@@ -33,7 +33,7 @@ class Tracker {
         if (d.cmd === 'setHome') {
             this.set_position('home');
         } else if (d.cmd === 'setPos') {
-            this.set_position(d.name);
+            this.set_position(d.pos);
         } else if (d.pos === 'F') {
             this.move_to(0, 0, duration, cb, ease);
         } else if (d.pos === 'L') {
