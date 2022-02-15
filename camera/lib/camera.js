@@ -124,11 +124,11 @@ class Camera {
         }));
 
         this.ws.send(JSON.stringify({
-            action: 'status', data: {name: 'Pan', pos: self.tracker.pos().pan}
+            action: 'status', data: {name: 'Pan', pos: self.tracker.pan.pos}
         }));
 
         this.ws.send(JSON.stringify({
-            action: 'status', data: {name: 'Tilt', pos: self.tracker.pos().tilt}
+            action: 'status', data: {name: 'Tilt', pos: self.tracker.tilt.pos}
         }));
 
         this.ws.on('message', function (data) {
@@ -136,7 +136,7 @@ class Camera {
                 let d = JSON.parse(data);
                 if (d.action === 'probe') {
                     self.process_probe(d);
-                } else {
+                } else if (!d.hasOwnProperty('light')) {
                     self.process_command(d);
                 }
             }
@@ -162,6 +162,7 @@ class Camera {
         // If probe response lags, signal alarm
         if (Date.now() > this.probeTime + maxProbeDelay) {
             console.log('Detected network lag!!!');
+            this.probeTime = Date.now() + 500;
             return true;
         }
 

@@ -6,16 +6,12 @@ class Servo {
 
     constructor(name, options) {
         this.name = name;
-        this.pos = 0;
-        this.home = 0;
+        this.pos = options.pos;
         this.min = options.min;
         this.max = options.max;
         this.reverse = options.reverse;
         this.gpio = new Gpio(options.pin, {mode: Gpio.OUTPUT});
         this.timer = null;
-
-        this.move = this.move.bind(this);
-        this.move_to = this.move_to.bind(this);
     }
 
     scale(number, inMin, inMax, outMin, outMax) {
@@ -72,7 +68,7 @@ class Servo {
         this.timer = setInterval(function () {
             let t = Date.now() - start;
             if (t < duration) {
-                self.executeMoveSync(ease(t, startPos, pos - startPos, duration));
+                self.executeMoveSync(ease(t, startPos, pos - startPos, duration), cb);
             } else {
                 self.executeMoveSync(pos, cb);
                 clearInterval(self.timer);

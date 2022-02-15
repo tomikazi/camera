@@ -20,9 +20,10 @@ function easeInOutCubic (t, b, c, d) {
 class Tracker {
 
     constructor() {
-        this.pan = new Servo('Pan', {pin: 18, reverse: true, min: -90, max: +90});
-        this.tilt = new Servo('Tilt', {pin: 19, reverse: false, min: -30, max: +15});
         this.positions = new Positions();
+        let home = this.positions.get('home') || {pan: 0, tilt: 0};
+        this.pan = new Servo('Pan', {pin: 18, reverse: true, min: -90, max: +90, pos: home.pan});
+        this.tilt = new Servo('Tilt', {pin: 19, reverse: false, min: -30, max: +15, pos: home.tilt});
         this.move_to_position('home', 1000, null, easeInOutQuad);
     }
 
