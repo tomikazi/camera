@@ -100,12 +100,14 @@ class StreamRelay {
 
                     if (self.cameras.has(name)) {
                         console.debug(`Sending ${name} initial SPS, PPS and sync frames`);
-                        let cr = self.cameras.get(name).recorder;
+                        let camera = self.cameras.get(name), cr = camera.recorder;
                         if (cr) {
                             socket.send(cr.spsNAL);
                             socket.send(cr.ppsNAL);
                             socket.send(cr.syncNAL);
                         }
+                        socket.send(JSON.stringify({action: 'status', data: {name: 'Pan', pos: camera.pos.pan}}));
+                        socket.send(JSON.stringify({action: 'status', data: {name: 'Tilt', pos: camera.pos.tilt}}));
                     }
                     self.update_camera_light(name);
                 }

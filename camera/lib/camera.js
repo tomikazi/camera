@@ -68,10 +68,12 @@ class Camera {
     }
 
     broadcast(data) {
-        if (this.check_lag()) {
-            this.reconnect();
-        } else {
-            this.ws.send(Buffer.concat([NALseparator, data]), {binary: true});
+        if (this.isConnected && this.ws) {
+            if (this.check_lag()) {
+                this.reconnect();
+            } else {
+                this.ws.send(Buffer.concat([NALseparator, data]), {binary: true});
+            }
         }
     }
 
@@ -98,7 +100,11 @@ class Camera {
     reconnect() {
         console.log('Reconnecting...');
         if (this.ws) {
+            this.stop_feed();
+            this.ws.removeAllListeners();
             this.ws.close();
+            this.isConnected = false;
+            this.ws = null;
         }
         this.connect();
     }
@@ -124,7 +130,7 @@ class Camera {
         }));
 
         this.ws.send(JSON.stringify({
-            action: 'status', data: {name: 'Pan', pos: self.tracker.pan.pos}
+            action: 'status', data: {name: 'Pan', pos: -self.tracker.pan.pos}
         }));
 
         this.ws.send(JSON.stringify({
@@ -162,7 +168,7 @@ class Camera {
         // If probe response lags, signal alarm
         if (Date.now() > this.probeTime + maxProbeDelay) {
             console.log('Detected network lag!!!');
-            this.probeTime = Date.now() + 500;
+            this.probeTime = Date.now() + 1000;
             return true;
         }
 

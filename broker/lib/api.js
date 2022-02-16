@@ -86,7 +86,8 @@ const controlCamera = function (req, res) {
         } else if (cmd === 'setHome') {
             camera.socket.send(`{"cmd": "setPos", "pos": "home"}`);
         } else if (cmd === 'setPos' && req.body.pos) {
-            camera.socket.send(`{"cmd": "setPos", "pos": "${req.body.pos}"}`);
+            let label = req.body.label || req.body.pos;
+            camera.socket.send(`{"cmd": "setPos", "pos": "${req.body.pos}", label: "${label}"}`);
         } else if (cmd === 'startRecording') {
             camera.recorder.start();
         } else if (cmd === 'stopRecording') {

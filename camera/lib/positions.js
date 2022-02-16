@@ -9,9 +9,9 @@ class Positions {
         this.load();
     }
 
-    set(name, pan, tilt) {
+    set(name, pan, tilt, label) {
         console.log(`Setting ${name} position to ${pan},${tilt}`);
-        this.points[name] = {pan: pan, tilt: tilt, name: name};
+        this.points[name] = {pan: pan, tilt: tilt, name: name, label: label || name};
         fs.writeFileSync(positionsFile, JSON.stringify(this.points));
     }
 
