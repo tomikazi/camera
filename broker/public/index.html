@@ -175,7 +175,11 @@
                 let amount = e.shiftKey ? 1 : 5,
                     motion = '"duration": 1000';
                 if (e.ctrlKey) {
-                    if (e.key === 'Home' || e.key === 'h') {
+                    console.log(e);
+                    if (e.shiftKey && e.key === 'R') {
+                        console.log(`Requesting restart...`);
+                        wsavc.ws.send(`{"cmd": "restart"}`);
+                    } else if (e.key === 'Home' || e.key === 'h') {
                         console.log(`Setting home...`);
                         wsavc.ws.send(`{"cmd": "setPos", "pos": "home"}`);
                     } else if (e.key === 'a' || e.key === 'b' || e.key === 'c' || e.key === 'd') {

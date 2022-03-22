@@ -131,9 +131,6 @@ class StreamRelay {
         let on = false;
         this.clients.forEach(function (cn, s, map) {
             on = on || cn === name;
-            if (on) {
-                return;
-            }
         });
         if (this.cameras.has(name)) {
             console.log(`Camera ${name} light: ${on}`);

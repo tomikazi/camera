@@ -156,6 +156,11 @@ class Camera {
     }
 
     process_command(d) {
+        if (d.cmd === 'restart') {
+            console.log('Received restart request');
+            this.stop();
+            setTimeout(process.exit, 250, [1]);
+        }
         this.tracker.pan_tilt(d, this.on_motion);
     }
 
